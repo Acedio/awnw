@@ -1,6 +1,10 @@
 #ifndef _PERLIN_H_
 #define _PERLIN_H_
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <GL/gl.h>
 
 GLfloat **create_noise_map(int w, int h);

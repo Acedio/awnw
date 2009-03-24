@@ -1,6 +1,10 @@
 #ifndef _TERRAMAP_H_
 #define _TERRAMAP_H_
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <GL/gl.h>
 
 #include <string>

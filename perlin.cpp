@@ -1,3 +1,7 @@
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <GL/gl.h>
 #include <GL/glu.h>
 
@@ -96,14 +100,14 @@ GLfloat **perlin_noise(int size, GLfloat persistence, int start, int end){
 		return NULL;
 	}
 	int s;
-	s = pow(2,size);
+	s = (int)pow((GLfloat)2,size);
 	int i;
 	GLfloat **map = new GLfloat*[s];
 	for(i = 0; i < s; i++){
 		map[i] = new GLfloat[s];
 	}
 	GLfloat p = 1, ptot = 0;
-	for(i = pow(2,end); i >= pow(2,start); i/=2){
+	for(i = (int)pow((GLfloat)2,end); i >= (int)pow((GLfloat)2,start); i/=2){
 		GLfloat **noise_map = create_noise_map(s/i,s/i);
 		GLfloat **temp = smooth_stretch_map(noise_map,s/i,s/i,i,i);
 		delete[] noise_map;
@@ -172,7 +176,7 @@ void to_file(GLfloat **heightmap, int w, int h, string file){
 	}
 }
 
-void rgb_to_file(GLfloat heightmap[256][256][3], int w, int h, string file){
+void rgb_to_file(GLfloat *heightmap, int w, int h, string file){
 	if(w > 0 && h > 0){
 		ofstream of(file.c_str());
 		of << "P3 " << w << " " << h << " 255\n";
@@ -181,7 +185,7 @@ void rgb_to_file(GLfloat heightmap[256][256][3], int w, int h, string file){
 		int min = 0;
 		for(y = 0; y < h; y++){
 			for(x = 0; x < w; x++){
-				of << (int)(255*(heightmap[y][x][0]-min)/(max-min)) << " " << (int)(255*(heightmap[y][x][1]-min)/(max-min)) << " " << (int)(255*(heightmap[y][x][2]-min)/(max-min)) << " ";
+				of << (int)(255*(heightmap[y*w+x*3+0]-min)/(max-min)) << " " << (int)(255*(heightmap[y*w+x*3+1]-min)/(max-min)) << " " << (int)(255*(heightmap[y*w+x*3+2]-min)/(max-min)) << " ";
 			}
 			of << "\n";
 		}
@@ -191,21 +195,23 @@ void rgb_to_file(GLfloat heightmap[256][256][3], int w, int h, string file){
 
 GLuint make_cloud_texture(){
 	//this works well for 256x256 clouds
-	GLfloat **perlin = perlin_noise(8,.5,0,5);
-	cloudify(perlin, 256, 256, .5, .01);
+	int power = 8;
+	int size = pow((GLfloat)2,power);
+	GLfloat **perlin = perlin_noise(power,.5,0,5);
+	cloudify(perlin, size, size, .5, .01);
 
-	GLfloat clouds[256][256][3];
+	GLfloat *tex = new GLfloat[size*size*3];
 	int y;
-	for(y = 0; y < 256; y++){
+	for(y = 0; y < size; y++){
 		int x;
-		for(x = 0; x < 256; x++){
-			clouds[y][x][0] = perlin[y][x];
-			clouds[y][x][1] = .6+perlin[y][x]*.4;
-			clouds[y][x][2] = .8+perlin[y][x]*.2;
+		for(x = 0; x < size; x++){
+			tex[y*size*3+x*3+0] = perlin[y][x];
+			tex[y*size*3+x*3+1] = .7+perlin[y][x]*.3;
+			tex[y*size*3+x*3+2] = .8+perlin[y][x]*.2;
 		}
 	}
 
-	rgb_to_file(clouds,256,256,"lol.ppm");
+	rgb_to_file(tex,size,size,"lol.ppm");
 
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -220,22 +226,26 @@ GLuint make_cloud_texture(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,256,256,GL_RGB,GL_FLOAT,clouds);
+	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,size,size,GL_RGB,GL_FLOAT,tex);
 
 	delete[] perlin;
+	delete[] tex;
 
 	return texture;
 }
 
 GLuint make_ground_texture(){
-	GLfloat **perlin = perlin_noise(8,.5,0,5);
+	int power = 8;
+	int size = pow((GLfloat)2,power);
 
-	GLfloat clouds[256][256][3];
+	GLfloat **perlin = perlin_noise(power,1.0,0,power);
+	GLfloat *tex = new GLfloat[size*size*3];
+
 	int y;
-	for(y = 0; y < 256; y++){
+	for(y = 0; y < size; y++){
 		int x;
-		for(x = 0; x < 256; x++){
-			clouds[y][x][0] = clouds[y][x][1] = clouds[y][x][2] = perlin[y][x];
+		for(x = 0; x < size; x++){
+			tex[y*size*3+x*3+0] = tex[y*size*3+x*3+1] = tex[y*size*3+x*3+2] = perlin[y][x];
 		}
 	}
 
@@ -252,9 +262,10 @@ GLuint make_ground_texture(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,256,256,GL_RGB,GL_FLOAT,clouds);
+	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,size,size,GL_RGB,GL_FLOAT,tex);
 
 	delete[] perlin;
+	delete[] tex;
 
 	return texture;
 }

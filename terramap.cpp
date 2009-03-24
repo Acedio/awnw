@@ -1,3 +1,7 @@
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <GL/gl.h>
 
 #include <cstdlib>
@@ -37,11 +41,11 @@ void display_heightmap(GLfloat **heightmap, int w, int h){
 }
 
 GLfloat **make_terramap(int power, GLfloat displace){
-	int size = pow(2,power);
+	int size = (int)pow((GLfloat)2,power);
 	GLfloat **heightmap = create_heightmap(size, size);
 	int level;
 	for(level = 0; level < power; level++){
-		int inc = size/pow(2,level);
+		int inc = size/(int)pow((GLfloat)2,level);
 		int start = inc/2;
 		int x;
 		// squares to diamonds
@@ -120,22 +124,22 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, int w, in
 		int y;
 		for(y = 0; y < h; y++){
 			terrain_color(heightmap,x%w,y%h);
-			//glTexCoord2d(0,0);
+			glTexCoord2d(((GLfloat)x)/(GLfloat)w,((GLfloat)y)/(GLfloat)h);
 			glNormal3fv(normalmap[y][x]);
 			glVertex3f((GLfloat)x*x_scale,heightmap[y%h][x%w]*z_scale,(GLfloat)y*y_scale);
 
 			terrain_color(heightmap,x%w,(y+1)%h);
-			//glTexCoord2d(1,0);
+			glTexCoord2d(((GLfloat)x)/(GLfloat)w,((GLfloat)(y+1))/(GLfloat)h);
 			glNormal3fv(normalmap[(y+1)%h][x]);
 			glVertex3f((GLfloat)x*x_scale,heightmap[(y+1)%h][x%w]*z_scale,(GLfloat)(y+1)*y_scale);
 
 			terrain_color(heightmap,(x+1)%w,(y+1)%h);
-			//glTexCoord2d(1,1);
+			glTexCoord2d(((GLfloat)(x+1))/(GLfloat)w,((GLfloat)(y+1))/(GLfloat)h);
 			glNormal3fv(normalmap[(y+1)%h][(x+1)%w]);
 			glVertex3f((GLfloat)(x+1)*x_scale,heightmap[(y+1)%h][(x+1)%w]*z_scale,(GLfloat)(y+1)*y_scale);
 
 			terrain_color(heightmap,(x+1)%w,y%h);
-			//glTexCoord2d(0,1);
+			glTexCoord2d(((GLfloat)(x+1))/(GLfloat)w,((GLfloat)y)/(GLfloat)h);
 			glNormal3fv(normalmap[y][(x+1)%w]);
 			glVertex3f((GLfloat)(x+1)*x_scale,heightmap[y%h][(x+1)%w]*z_scale,(GLfloat)y*y_scale);
 		}

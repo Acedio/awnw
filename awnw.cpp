@@ -1,6 +1,8 @@
 // RANDOM TERRAMAP
 // By Josh Simmons 2009
 
+//TODO: Make a new rand() and modify perlin() so when the same params are passed, the same terrain is generated
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -19,8 +21,8 @@ using namespace std;
 #include "terramap.h"
 #include "perlin.h"
 
-#define SCREEN_W 500
-#define SCREEN_H 500
+#define SCREEN_W 800
+#define SCREEN_H 600
 #define SCREEN_BPP 32
 
 int power=6, size;
@@ -54,31 +56,34 @@ void draw_terrain(){
 	if(spinning){
 		spin += spin_speed;
 	}
-	//glBindTexture(GL_TEXTURE_2D, ground_texture);
-	glDisable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, ground_texture);
+	//glDisable(GL_TEXTURE_2D);
 	if(textured){
 		draw_heightmap_texture(current_heightmap,current_normalmap,size,size,1,1,1);
 	} else {
 		draw_heightmap_vector(current_heightmap,size,size,1,1,1);
 	}
-	glEnable(GL_TEXTURE_2D);
+	//glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, cloud_texture);
 	glColor3f(1,1,1);
+	GLfloat min = -1*pow((GLfloat)2,power);
+	GLfloat max = 2*pow((GLfloat)2,power);
+	GLfloat height = 3*pow((GLfloat)2,power);
 	glBegin(GL_QUADS);
-	glTexCoord2d(0,1); glVertex3f(-1*pow(2,power),sky_pos,-1*pow(2,power));
-	glTexCoord2d(1,1); glVertex3f(2*pow(2,power),sky_pos,-1*pow(2,power));
-	glTexCoord2d(1,0); glVertex3f(2*pow(2,power),sky_pos,2*pow(2,power));
-	glTexCoord2d(0,0); glVertex3f(-1*pow(2,power),sky_pos,2*pow(2,power));
+	glTexCoord2d(0,1); glVertex3f(min,sky_pos,min);
+	glTexCoord2d(1,1); glVertex3f(max,sky_pos,min);
+	glTexCoord2d(1,0); glVertex3f(max,sky_pos,max);
+	glTexCoord2d(0,0); glVertex3f(min,sky_pos,max);
 
-	glTexCoord2d(0,0); glVertex3f(-1*pow(2,power),sky_pos,-1*pow(2,power));
-	glTexCoord2d(1,0); glVertex3f(2*pow(2,power),sky_pos,-1*pow(2,power));
-	glTexCoord2d(1,1); glVertex3f(2*pow(2,power),sky_pos-3*pow(2,power),-1*pow(2,power));
-	glTexCoord2d(0,1); glVertex3f(-1*pow(2,power),sky_pos-3*pow(2,power),-1*pow(2,power));
+	glTexCoord2d(0,0); glVertex3f(min,sky_pos,min);
+	glTexCoord2d(1,0); glVertex3f(max,sky_pos,min);
+	glTexCoord2d(1,1); glVertex3f(max,sky_pos-height,min);
+	glTexCoord2d(0,1); glVertex3f(min,sky_pos-height,min);
 
-	glTexCoord2d(0,1); glVertex3f(2*pow(2,power),sky_pos-3*pow(2,power),-1*pow(2,power));
-	glTexCoord2d(1,1); glVertex3f(2*pow(2,power),sky_pos-3*pow(2,power),2*pow(2,power));
-	glTexCoord2d(1,0); glVertex3f(2*pow(2,power),sky_pos,2*pow(2,power));
-	glTexCoord2d(0,0); glVertex3f(2*pow(2,power),sky_pos,-1*pow(2,power));
+	glTexCoord2d(0,1); glVertex3f(max,sky_pos-height,min);
+	glTexCoord2d(1,1); glVertex3f(max,sky_pos-height,max);
+	glTexCoord2d(1,0); glVertex3f(max,sky_pos,max);
+	glTexCoord2d(0,0); glVertex3f(max,sky_pos,min);
 	glEnd();
 }
 
@@ -227,7 +232,7 @@ void keyboard(Uint8 *keys){
 	for(key = SDLK_1; key <= SDLK_9; key++){
 		if(keys[key]){
 			power = key - SDLK_0;
-			size = pow(2,power);
+			size = (int)pow((GLfloat)2,power);
 			current_heightmap = make_terramap(power,.25);
 			if(textured){
 				oceanify(current_heightmap, size, size, 0.1);
@@ -239,7 +244,7 @@ void keyboard(Uint8 *keys){
 
 int main(int argc, char **argv){
 	srand(time(0));
-	size = pow(2,power);
+	size = (int)pow((GLfloat)2,power);
 	current_heightmap = make_terramap(power,.25);
 	oceanify(current_heightmap, size, size, 0.1);
 	current_normalmap = make_normalmap(current_heightmap,size,size);
@@ -300,7 +305,7 @@ int main(int argc, char **argv){
 		int x, y;
 
 		Uint8 pressed = SDL_GetMouseState(&x, &y);
-		light_pos[0] = pow(2,power) * (GLfloat)x / (GLfloat)cur_screen_w;
+		light_pos[0] = pow((GLfloat)2,power) * (GLfloat)x / (GLfloat)cur_screen_w;
 
 		if(pressed&SDL_BUTTON(1)){
 			light_pos[1] += 0.5;
@@ -311,7 +316,7 @@ int main(int argc, char **argv){
 			sky_pos -= 1;
 		}
 
-		light_pos[2] = pow(2,power) * (GLfloat)y / (GLfloat)cur_screen_h;
+		light_pos[2] = pow((GLfloat)2,power) * (GLfloat)y / (GLfloat)cur_screen_h;
 
 		glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
 
