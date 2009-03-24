@@ -21,9 +21,9 @@ using namespace std;
 #include "terramap.h"
 #include "perlin.h"
 
-#define SCREEN_W 800
-#define SCREEN_H 600
-#define SCREEN_BPP 32
+const int SCREEN_W = 800;
+const int SCREEN_H = 600;
+const int SCREEN_BPP = 32;
 
 int power=6, size;
 GLfloat hill_factor = .97;
@@ -57,13 +57,11 @@ void draw_terrain(){
 		spin += spin_speed;
 	}
 	glBindTexture(GL_TEXTURE_2D, ground_texture);
-	//glDisable(GL_TEXTURE_2D);
 	if(textured){
 		draw_heightmap_texture(current_heightmap,current_normalmap,size,size,1,1,1);
 	} else {
 		draw_heightmap_vector(current_heightmap,size,size,1,1,1);
 	}
-	//glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, cloud_texture);
 	glColor3f(1,1,1);
 	GLfloat min = -1*pow((GLfloat)2,power);
@@ -139,8 +137,13 @@ void keyboard(Uint8 *keys){
 			oceanify(current_heightmap, size, size, 0.1);
 		}
 		current_normalmap = make_normalmap(current_heightmap,size,size);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_TEXTURE_2D);
 		glDeleteTextures(1,&cloud_texture);
+		glDeleteTextures(1,&ground_texture);
 		cloud_texture = make_cloud_texture();
+		ground_texture = make_ground_texture();
+		glEnable(GL_TEXTURE_2D);
 	}
 	if(keys[SDLK_o]){
 		oceanify(current_heightmap, size, size, 0.1);
@@ -332,7 +335,17 @@ int main(int argc, char **argv){
 	SDL_FreeSurface(screen);
 
 	SDL_Quit();
-
+	for(int i = 0; i < size; i++){
+		delete[] current_heightmap[i];
+	}
 	delete[] current_heightmap;
+
+	for(int i = 0; i < size; i++){
+		for(int j = 0; j < size; j++){
+			delete[] current_normalmap[i][j];
+		}
+		delete[] current_normalmap[i];
+	}
+	delete[] current_normalmap;
 	return 0;
 }

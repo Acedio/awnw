@@ -14,7 +14,9 @@ using namespace std;
 
 #include "perlin.h"
 
-#define SMOOTHSTEP(x) ((x) * (x) * (3 - 2 * (x)))
+inline GLfloat smoothstep(GLfloat x){
+	return x * x * (3 - 2 * x);
+}
 
 GLfloat **create_noise_map(int w, int h){
 	GLfloat **map = new GLfloat*[h];
@@ -77,7 +79,7 @@ GLfloat **smooth_stretch_map(GLfloat **map, int w, int h, int x_scale, int y_sca
 			GLfloat step = 1/(GLfloat)x_scale;
 			int xs;
 			for(xs = 0; xs < x_scale; xs++){
-				stretched[y_scale*y][x_scale*x+xs] = i+(f-i)*SMOOTHSTEP(step*(GLfloat)xs);
+				stretched[y_scale*y][x_scale*x+xs] = i+(f-i)*smoothstep(step*(GLfloat)xs);
 			}
 		}
 	}
@@ -88,7 +90,7 @@ GLfloat **smooth_stretch_map(GLfloat **map, int w, int h, int x_scale, int y_sca
 			GLfloat step = 1/(GLfloat)y_scale;
 			int ys;
 			for(ys = 0; ys < y_scale; ys++){
-				stretched[y*y_scale+ys][x] = i+(f-i)*SMOOTHSTEP(step*(GLfloat)ys);
+				stretched[y*y_scale+ys][x] = i+(f-i)*smoothstep(step*(GLfloat)ys);
 			}
 		}
 	}
@@ -110,6 +112,9 @@ GLfloat **perlin_noise(int size, GLfloat persistence, int start, int end){
 	for(i = (int)pow((GLfloat)2,end); i >= (int)pow((GLfloat)2,start); i/=2){
 		GLfloat **noise_map = create_noise_map(s/i,s/i);
 		GLfloat **temp = smooth_stretch_map(noise_map,s/i,s/i,i,i);
+		for(int j = 0; j < s/i; j++){
+			delete[] noise_map[j];
+		}
 		delete[] noise_map;
 		int y;
 		for(y = 0; y < s; y++){
@@ -117,6 +122,9 @@ GLfloat **perlin_noise(int size, GLfloat persistence, int start, int end){
 			for(x = 0; x < s; x++){
 				map[y][x] += temp[y][x]*p;
 			}
+		}
+		for(int j = 0; j < s; j++){
+			delete[] temp[j];
 		}
 		delete[] temp;
 		ptot += p;
@@ -152,20 +160,8 @@ void to_file(GLfloat **heightmap, int w, int h, string file){
 		ofstream of(file.c_str());
 		of << "P2 " << w << " " << h << " 255\n";
 		int y,x;
-		GLfloat max = heightmap[0][0];
-		GLfloat min = max;
-		for(y = 0; y < h; y++){
-			for(x = 0; x < w; x++){
-				if(heightmap[y][x] > max){
-					max = heightmap[y][x];
-				}
-				if(heightmap[y][x] < min){
-					min = heightmap[y][x];
-				}
-			}
-		}
-		max = 1;
-		min = 0;
+		GLfloat max = 1;
+		GLfloat min = 0;
 		for(y = 0; y < h; y++){
 			for(x = 0; x < w; x++){
 				of << (int)(255*(heightmap[y][x]-min)/(max-min)) << " ";
@@ -198,7 +194,12 @@ GLuint make_cloud_texture(){
 	int power = 8;
 	int size = pow((GLfloat)2,power);
 	GLfloat **perlin = perlin_noise(power,.5,0,5);
+
+	to_file(perlin, size, size, "perlin.pgm");
+
 	cloudify(perlin, size, size, .5, .01);
+
+	to_file(perlin, size, size, "cloudified.pgm");
 
 	GLfloat *tex = new GLfloat[size*size*3];
 	int y;
@@ -211,7 +212,7 @@ GLuint make_cloud_texture(){
 		}
 	}
 
-	rgb_to_file(tex,size,size,"lol.ppm");
+	rgb_to_file(tex,size,size,"colored.ppm");
 
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -228,6 +229,9 @@ GLuint make_cloud_texture(){
 
 	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,size,size,GL_RGB,GL_FLOAT,tex);
 
+	for(int i = 0; i < size; i++){
+		delete[] perlin[i];
+	}
 	delete[] perlin;
 	delete[] tex;
 
