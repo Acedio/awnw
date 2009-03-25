@@ -54,13 +54,14 @@ GLuint cloud_texture;
 GLuint ground_texture;
 
 void draw_terrain(){
+	// Transforms for camera view
 	glLoadIdentity();
 	glRotatef(h_angle,0,1,0);
 	glRotatef(v_angle,cos(PI*h_angle/180.0),0,sin(PI*h_angle/180.0));
 	glTranslatef(x_off-size/2,y_off,z_off-size);
-	glTranslatef(size/2,0,size/2);
-	glRotatef(spin,0,1,0);
-	glTranslatef(-size/2,0,-size/2);
+	glTranslatef(size/2,0,size/2); // Translate so we're rotating around the center of the land
+	glRotatef(spin,0,1,0); // Yoshi's Island spin!
+	glTranslatef(-size/2,0,-size/2); // Translate back
 	if(spinning){
 		spin += spin_speed;
 	}
@@ -70,11 +71,17 @@ void draw_terrain(){
 	} else {
 		draw_heightmap_vector(current_heightmap,size,size,1,1,1);
 	}
-	glTranslatef(size/2,0,size/2);
+	glTranslatef(size/2,0,size/2); // Translate to center so the clouds are drawn around the center
+	glRotatef(-spin,0,1,0); // Spin back so the clouds don't rotate with the land
+
+	// draw cloud spehere
+
 	glBindTexture(GL_TEXTURE_2D, cloud_texture);
 	glColor3f(1,1,1);
 	if(light){
-		glDisable(GL_LIGHTING);
+		glDisable(GL_LIGHTING); // We want our clouds to be bright and shiny and unaffected by lighting
+		glDisable(GL_COLOR_MATERIAL);
+		glDisable(GL_LIGHT0);
 	}
 	glBegin(GL_QUADS);
 	double radius = 6*size;
@@ -90,16 +97,22 @@ void draw_terrain(){
 			glTexCoord2d(0+cloud_movement_x,1+cloud_movement_y); glVertex3f(x*step,sqrt(radius*radius - x*x*step*step - ((z+1)*step)*((z+1)*step))-lower_by,(z+1)*step);
 		}
 	}
+	glEnd();
+
+	// Nice slow cloud movement and checks to see if we can set s and t back to 0 for tex repeating
 	cloud_movement_x += cos(cloud_movement_x)*cloud_move_speed;
 	while(cloud_movement_x > 1.0){
 		cloud_movement_x -= 1.0;
 	}
+
 	cloud_movement_y += sin(cloud_movement_y)*cloud_move_speed;
 	while(cloud_movement_y > 1.0){
 		cloud_movement_y -= 1.0;
 	}
-	glEnd();
+
 	if(light){
+		// Bring the light back for terrain drawing. We want lighting enabled during
+		// the keyboard routine so we can still change light properties (position, etc)
 		glEnable(GL_LIGHTING);
 		glEnable(GL_COLOR_MATERIAL);
 		glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
