@@ -1,4 +1,9 @@
 *.o
-awnw
+/awnw
 *.ppm
 *.pgm
+vc++/awnw/Debug
+vc++/awnw/*.user
+vc++/Debug
+*.suo
+*.ncb
