@@ -25,7 +25,11 @@ const int SCREEN_W = 800;
 const int SCREEN_H = 600;
 const int SCREEN_BPP = 32;
 
-int power=6, size;
+const float PI = 3.1415;
+
+bool running = true;
+
+int power=7, size;
 GLfloat hill_factor = .97;
 bool spinning = false;
 GLfloat spin = 0;
@@ -35,20 +39,24 @@ bool day = true;
 bool fog = false;
 bool light = false;
 bool flat = false;
+GLfloat fog_amount = .006;
 GLfloat **current_heightmap;
 GLfloat ***current_normalmap;
+
+GLfloat cloud_movement_x = 0;
+GLfloat cloud_movement_y = 0;
+GLfloat cloud_move_speed = .0005;
+GLfloat cloud_move_angle = 1;
 
 GLfloat x_off = 0, y_off = -50, z_off = -20, h_angle = 0, v_angle = 45;
 
 GLuint cloud_texture;
 GLuint ground_texture;
 
-GLfloat sky_pos = 60;
-
 void draw_terrain(){
 	glLoadIdentity();
 	glRotatef(h_angle,0,1,0);
-	glRotatef(v_angle,cos(3.1415*h_angle/180.0),0,sin(3.1415*h_angle/180.0));
+	glRotatef(v_angle,cos(PI*h_angle/180.0),0,sin(PI*h_angle/180.0));
 	glTranslatef(x_off-size/2,y_off,z_off-size);
 	glTranslatef(size/2,0,size/2);
 	glRotatef(spin,0,1,0);
@@ -62,27 +70,41 @@ void draw_terrain(){
 	} else {
 		draw_heightmap_vector(current_heightmap,size,size,1,1,1);
 	}
+	glTranslatef(size/2,0,size/2);
 	glBindTexture(GL_TEXTURE_2D, cloud_texture);
 	glColor3f(1,1,1);
-	GLfloat min = -1*pow((GLfloat)2,power);
-	GLfloat max = 2*pow((GLfloat)2,power);
-	GLfloat height = 3*pow((GLfloat)2,power);
+	if(light){
+		glDisable(GL_LIGHTING);
+	}
 	glBegin(GL_QUADS);
-	glTexCoord2d(0,1); glVertex3f(min,sky_pos,min);
-	glTexCoord2d(1,1); glVertex3f(max,sky_pos,min);
-	glTexCoord2d(1,0); glVertex3f(max,sky_pos,max);
-	glTexCoord2d(0,0); glVertex3f(min,sky_pos,max);
-
-	glTexCoord2d(0,0); glVertex3f(min,sky_pos,min);
-	glTexCoord2d(1,0); glVertex3f(max,sky_pos,min);
-	glTexCoord2d(1,1); glVertex3f(max,sky_pos-height,min);
-	glTexCoord2d(0,1); glVertex3f(min,sky_pos-height,min);
-
-	glTexCoord2d(0,1); glVertex3f(max,sky_pos-height,min);
-	glTexCoord2d(1,1); glVertex3f(max,sky_pos-height,max);
-	glTexCoord2d(1,0); glVertex3f(max,sky_pos,max);
-	glTexCoord2d(0,0); glVertex3f(max,sky_pos,min);
+	double radius = 6*size;
+	double max = .9*sqrt(radius*radius/2);
+	int divisions = 6; // number of x and z divisions in the cloud layer
+	double step = 2*max/(double)divisions;
+	double lower_by = 5*radius/6;
+	for(int z = -divisions/2; z < divisions/2; z += 1){
+		for(int x = -divisions/2; x < divisions/2; x += 1){
+			glTexCoord2d(0+cloud_movement_x,0+cloud_movement_y); glVertex3f(x*step,sqrt(radius*radius - x*x*step*step - z*z*step*step)-lower_by,z*step);
+			glTexCoord2d(1+cloud_movement_x,0+cloud_movement_y); glVertex3f((x+1)*step,sqrt(radius*radius - ((x+1)*step)*((x+1)*step) - z*z*step*step)-lower_by,z*step);
+			glTexCoord2d(1+cloud_movement_x,1+cloud_movement_y); glVertex3f((x+1)*step,sqrt(radius*radius - ((x+1)*step)*((x+1)*step) - ((z+1)*step)*((z+1)*step))-lower_by,(z+1)*step);
+			glTexCoord2d(0+cloud_movement_x,1+cloud_movement_y); glVertex3f(x*step,sqrt(radius*radius - x*x*step*step - ((z+1)*step)*((z+1)*step))-lower_by,(z+1)*step);
+		}
+	}
+	cloud_movement_x += cos(cloud_movement_x)*cloud_move_speed;
+	while(cloud_movement_x > 1.0){
+		cloud_movement_x -= 1.0;
+	}
+	cloud_movement_y += sin(cloud_movement_y)*cloud_move_speed;
+	while(cloud_movement_y > 1.0){
+		cloud_movement_y -= 1.0;
+	}
 	glEnd();
+	if(light){
+		glEnable(GL_LIGHTING);
+		glEnable(GL_COLOR_MATERIAL);
+		glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
+		glEnable(GL_LIGHT0);
+	}
 }
 
 void resize(int w, int h)
@@ -90,7 +112,7 @@ void resize(int w, int h)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glViewport(0, 0, w, h);
-	gluPerspective(45.0f,1.0f*w/h,1.0f,350.0f);
+	gluPerspective(45.0f,1.0f*w/h,1.0f,650.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -98,20 +120,22 @@ void resize(int w, int h)
 void keyboard(Uint8 *keys){
 	GLfloat speed = .5;
 	if(keys[SDLK_w]){
-		x_off -= sin(3.1415*h_angle/180.0)*speed;
-		z_off += cos(3.1415*h_angle/180.0)*speed;
+		x_off -= cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
+		y_off += sin(PI*v_angle/180.0)*speed;
+		z_off += cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
 	}
 	if(keys[SDLK_s]){
-		x_off += sin(3.1415*h_angle/180.0)*speed;
-		z_off -= cos(3.1415*h_angle/180.0)*speed;
+		x_off += cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
+		y_off -= sin(PI*v_angle/180.0)*speed;
+		z_off -= cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
 	}
 	if(keys[SDLK_a]){
-		x_off += cos(3.1415*h_angle/180.0)*speed;
-		z_off += sin(3.1415*h_angle/180.0)*speed;
+		x_off += cos(PI*h_angle/180.0)*speed;
+		z_off += sin(PI*h_angle/180.0)*speed;
 	}
 	if(keys[SDLK_d]){
-		x_off -= cos(3.1415*h_angle/180.0)*speed;
-		z_off -= sin(3.1415*h_angle/180.0)*speed;
+		x_off -= cos(PI*h_angle/180.0)*speed;
+		z_off -= sin(PI*h_angle/180.0)*speed;
 	}
 	if(keys[SDLK_r]){
 		y_off -= speed;
@@ -171,7 +195,7 @@ void keyboard(Uint8 *keys){
 		spin_speed += .01;
 	}
 	if(keys[SDLK_q]){
-		exit(0);
+		running = false;
 	}
 	if(keys[SDLK_p]){
 		out_to_file(current_heightmap, size, size, "output.pgm");
@@ -217,7 +241,7 @@ void keyboard(Uint8 *keys){
 			glFogi(GL_FOG_MODE, GL_EXP2);
 			GLfloat fog_color[] = {0.8, 0.8, 0.8, 1.0};
 			glFogfv(GL_FOG_COLOR, fog_color);
-			glFogf(GL_FOG_DENSITY, 0.01);
+			glFogf(GL_FOG_DENSITY, fog_amount);
 			glHint(GL_FOG_HINT, GL_NICEST);
 		} else {
 			glDisable(GL_FOG);
@@ -267,6 +291,10 @@ int main(int argc, char **argv){
 
 	SDL_WM_SetCaption("Terrain!", NULL);
 
+	SDL_WM_GrabInput(SDL_GRAB_ON);
+
+	SDL_ShowCursor(SDL_DISABLE);
+
 	glEnable(GL_DEPTH_TEST); // for z buffering
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_TEXTURE_2D);
@@ -275,9 +303,7 @@ int main(int argc, char **argv){
 
 	resize(cur_screen_w, cur_screen_h);
 
-	bool running = true;
-
-	GLfloat light_pos[] = {0,15,0,1.0};
+	GLfloat light_pos[] = {0,25,0,1.0};
 
 	cloud_texture = make_cloud_texture();
 
@@ -308,20 +334,31 @@ int main(int argc, char **argv){
 		int x, y;
 
 		Uint8 pressed = SDL_GetMouseState(&x, &y);
-		light_pos[0] = pow((GLfloat)2,power) * (GLfloat)x / (GLfloat)cur_screen_w;
+		if(pressed&SDL_BUTTON(2)){
+			SDL_ShowCursor(SDL_ENABLE);
+			light_pos[0] = size * (GLfloat)x / (GLfloat)cur_screen_w - size / 2;
+			light_pos[2] = size * (GLfloat)y / (GLfloat)cur_screen_h - size / 2;
+		} else {
+			SDL_ShowCursor(SDL_DISABLE);
+		}
 
 		if(pressed&SDL_BUTTON(1)){
 			light_pos[1] += 0.5;
-			sky_pos += 1;
 		}
 		if(pressed&SDL_BUTTON(3)){
 			light_pos[1] -= 0.5;
-			sky_pos -= 1;
 		}
 
-		light_pos[2] = pow((GLfloat)2,power) * (GLfloat)y / (GLfloat)cur_screen_h;
-
 		glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+
+		pressed = SDL_GetRelativeMouseState(&x, &y);
+
+		if(!(pressed&SDL_BUTTON(2))){
+			h_angle += x;
+			v_angle += y;
+			if(v_angle < -90) v_angle = -90;
+			if(v_angle > 90) v_angle = 90;
+		}
 
 		keyboard(keys);
 
@@ -331,6 +368,8 @@ int main(int argc, char **argv){
 
 		SDL_GL_SwapBuffers();
 	}
+
+	SDL_WM_GrabInput(SDL_GRAB_OFF);
 
 	SDL_FreeSurface(screen);
 

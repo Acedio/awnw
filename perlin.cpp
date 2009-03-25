@@ -179,11 +179,7 @@ GLuint make_cloud_texture(){
 	int size = pow((GLfloat)2,power);
 	GLfloat *perlin = perlin_noise(power,.5,0,5);
 
-	to_file(perlin, size, size, "perlin.pgm");
-
-	cloudify(perlin, size, size, .5, .01);
-
-	to_file(perlin, size, size, "cloudified.pgm");
+	cloudify(perlin, size, size, .25, .01);
 
 	GLfloat *tex = new GLfloat[size*size*3];
 	int y;
@@ -195,8 +191,6 @@ GLuint make_cloud_texture(){
 			tex[y*size*3+x*3+2] = .8+perlin[y*size+x]*.2;
 		}
 	}
-
-	rgb_to_file(tex,size,size,"colored.ppm");
 
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -223,16 +217,7 @@ GLuint make_ground_texture(){
 	int power = 8;
 	int size = pow((GLfloat)2,power);
 
-	GLfloat *perlin = perlin_noise(power,1.0,0,power);
-	GLfloat *tex = new GLfloat[size*size*3];
-
-	int y;
-	for(y = 0; y < size; y++){
-		int x;
-		for(x = 0; x < size; x++){
-			tex[y*size*3+x*3+0] = tex[y*size*3+x*3+1] = tex[y*size*3+x*3+2] = perlin[y*size+x];
-		}
-	}
+	GLfloat *tex = perlin_noise(power,1.0,2,power);
 
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -247,9 +232,8 @@ GLuint make_ground_texture(){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,size,size,GL_RGB,GL_FLOAT,tex);
+	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_LUMINANCE,size,size,GL_LUMINANCE,GL_FLOAT,tex);
 
-	delete[] perlin;
 	delete[] tex;
 
 	return texture;
