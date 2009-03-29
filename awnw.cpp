@@ -170,8 +170,9 @@ void keyboard(Uint8 *keys){
 	}
 	if(keys[SDLK_z]){
 		current_heightmap = make_terramap(power,.25);
+		current_heightmap = normalize(current_heightmap, size, size, 15);
 		if(textured){
-			oceanify(current_heightmap, size, size, 0.1);
+			//oceanify(current_heightmap, size, size, 0.1);
 		}
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -216,7 +217,7 @@ void keyboard(Uint8 *keys){
 	if(keys[SDLK_t]){
 		textured = !textured;
 		if(textured){
-			oceanify(current_heightmap, size, size, 0.1);
+			//oceanify(current_heightmap, size, size, 0.1);
 		}
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 	}
@@ -274,19 +275,35 @@ void keyboard(Uint8 *keys){
 			power = key - SDLK_0;
 			size = (int)pow((GLfloat)2,power);
 			current_heightmap = make_terramap(power,.25);
+			//current_heightmap = normalize(current_heightmap, size, size, 15);
 			if(textured){
-				oceanify(current_heightmap, size, size, 0.1);
+				//oceanify(current_heightmap, size, size, 0.1);
 			}
 			current_normalmap = make_normalmap(current_heightmap,size,size);
 		}
 	}
 }
 
+GLfloat **d1_to_d2(GLfloat *one, int w, int h){
+	GLfloat **two = new GLfloat*[h];
+	for(int y = 0; y < h; y++){
+		two[y] = new GLfloat[w];
+		for(int x = 0; x < w; x++){
+			two[y][x] = one[y*w+x];
+		}
+	}
+	return two;
+}
+
 int main(int argc, char **argv){
 	srand(time(0));
 	size = (int)pow((GLfloat)2,power);
-	current_heightmap = make_terramap(power,.25);
-	oceanify(current_heightmap, size, size, 0.1);
+	//current_heightmap = make_terramap(power,.25);
+	GLfloat *perlin = perlin_noise(power,.5,0,power);
+	current_heightmap = d1_to_d2(perlin, size, size);
+	delete[] perlin;
+	current_heightmap = normalize(current_heightmap, size, size, 15);
+	//oceanify(current_heightmap, size, size, 0.1);
 	current_normalmap = make_normalmap(current_heightmap,size,size);
 
 	SDL_Surface *screen;
@@ -316,7 +333,7 @@ int main(int argc, char **argv){
 
 	resize(cur_screen_w, cur_screen_h);
 
-	GLfloat light_pos[] = {0,25,0,1.0};
+	GLfloat light_pos[] = {0,50,0,1.0};
 
 	cloud_texture = make_cloud_texture();
 
@@ -381,6 +398,11 @@ int main(int argc, char **argv){
 
 		SDL_GL_SwapBuffers();
 	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_TEXTURE_2D);
+	glDeleteTextures(1,&cloud_texture);
+	glDeleteTextures(1,&ground_texture);
 
 	SDL_WM_GrabInput(SDL_GRAB_OFF);
 

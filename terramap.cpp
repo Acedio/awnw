@@ -105,7 +105,7 @@ void draw_heightmap_vector(GLfloat **heightmap, int w, int h, GLfloat x_scale, G
 
 void terrain_color(GLfloat **heightmap, int x, int y){
 	if(heightmap[y][x] < 1){
-		glColor3f(0,0,.3+heightmap[y][x]*.7);
+		glColor3f(0,0,.3+sqrt(-1/(heightmap[y][x]-2))*.7);
 	} else if(heightmap[y][x] < 3){
 		glColor3f(.8,.7,.2);
 	} else if(heightmap[y][x] < 6){
@@ -126,22 +126,22 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, int w, in
 			terrain_color(heightmap,x%w,y%h);
 			glTexCoord2d(((GLfloat)x)/(GLfloat)w,((GLfloat)y)/(GLfloat)h);
 			glNormal3fv(normalmap[y][x]);
-			glVertex3f((GLfloat)x*x_scale,heightmap[y%h][x%w]*z_scale,(GLfloat)y*y_scale);
+			glVertex3f((GLfloat)x*x_scale,((heightmap[y%h][x%w]<1)?1:heightmap[y%h][x%w])*z_scale,(GLfloat)y*y_scale);
 
 			terrain_color(heightmap,x%w,(y+1)%h);
 			glTexCoord2d(((GLfloat)x)/(GLfloat)w,((GLfloat)(y+1))/(GLfloat)h);
 			glNormal3fv(normalmap[(y+1)%h][x]);
-			glVertex3f((GLfloat)x*x_scale,heightmap[(y+1)%h][x%w]*z_scale,(GLfloat)(y+1)*y_scale);
+			glVertex3f((GLfloat)x*x_scale,((heightmap[(y+1)%h][x%w]<1)?1:heightmap[(y+1)%h][x%w])*z_scale,(GLfloat)(y+1)*y_scale);
 
 			terrain_color(heightmap,(x+1)%w,(y+1)%h);
 			glTexCoord2d(((GLfloat)(x+1))/(GLfloat)w,((GLfloat)(y+1))/(GLfloat)h);
 			glNormal3fv(normalmap[(y+1)%h][(x+1)%w]);
-			glVertex3f((GLfloat)(x+1)*x_scale,heightmap[(y+1)%h][(x+1)%w]*z_scale,(GLfloat)(y+1)*y_scale);
+			glVertex3f((GLfloat)(x+1)*x_scale,((heightmap[(y+1)%h][(x+1)%w]<1)?1:heightmap[(y+1)%h][(x+1)%w])*z_scale,(GLfloat)(y+1)*y_scale);
 
 			terrain_color(heightmap,(x+1)%w,y%h);
 			glTexCoord2d(((GLfloat)(x+1))/(GLfloat)w,((GLfloat)y)/(GLfloat)h);
 			glNormal3fv(normalmap[y][(x+1)%w]);
-			glVertex3f((GLfloat)(x+1)*x_scale,heightmap[y%h][(x+1)%w]*z_scale,(GLfloat)y*y_scale);
+			glVertex3f((GLfloat)(x+1)*x_scale,((heightmap[y%h][(x+1)%w]<1)?1:heightmap[y%h][(x+1)%w])*z_scale,(GLfloat)y*y_scale);
 		}
 	}
 	glEnd();
@@ -213,6 +213,27 @@ void smoothify(GLfloat **heightmap, int w, int h, GLfloat inertia){
 	}
 }
 
+GLfloat **normalize(GLfloat **heightmap, int w, int h, GLfloat depth){
+	GLfloat min, max;
+	min = max = heightmap[0][0];
+	for(int y = 0; y < h; y++){
+		for(int x = 0; x < w; x++){
+			if(heightmap[y][x] < min){
+				min = heightmap[y][x];
+			} else if(heightmap[y][x] > max){
+				max = heightmap[y][x];
+			}
+		}
+	}
+	GLfloat **normalized = create_heightmap(w,h);
+	for(int y = 0; y < h; y++){
+		for(int x = 0; x < w; x++){
+			normalized[y][x] = depth * (heightmap[y][x] - min) / (max - min);
+		}
+	}
+	return normalized;
+}
+
 void out_to_file(GLfloat **heightmap, int w, int h, string file){
 	if(w > 0 && h > 0){
 		ofstream of(file.c_str());
@@ -239,4 +260,3 @@ void out_to_file(GLfloat **heightmap, int w, int h, string file){
 		of.close();
 	}
 }
-

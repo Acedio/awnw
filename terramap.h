@@ -25,6 +25,7 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, int w, in
 void oceanify(GLfloat **heightmap, int w, int h, GLfloat min);
 void hillify(GLfloat **heightmap, int w, int h, GLfloat flatness);
 void smoothify(GLfloat **heightmap, int w, int h, GLfloat inertia);
+GLfloat **normalize(GLfloat **heightmap, int w, int h, GLfloat depth);
 
 void out_to_file(GLfloat **heightmap, int w, int h, string file);
 
