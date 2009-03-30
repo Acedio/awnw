@@ -1,10 +1,10 @@
-CC=g++
+CC=g++ -g
 CFLAGS=-c -Wall
 
 all: awnw
 
-awnw: awnw.o perlin.o terramap.o textures.o
-	$(CC) awnw.o perlin.o terramap.o textures.o -lSDL -lGLU -o awnw
+awnw: awnw.o perlin.o terramap.o textures.o map.o
+	$(CC) awnw.o perlin.o terramap.o textures.o map.o -lSDL -lGLU -o awnw
 
 awnw.o: awnw.cpp terramap.h perlin.h textures.h
 	$(CC) $(CFLAGS) awnw.cpp
@@ -15,8 +15,11 @@ perlin.o: perlin.cpp perlin.h
 terramap.o: terramap.cpp terramap.h
 	$(CC) $(CFLAGS) terramap.cpp
 
-textures.o: textures.cpp textures.h perlin.h
+textures.o: textures.cpp textures.h perlin.h map.h
 	$(CC) $(CFLAGS) textures.cpp
+
+map.o: map.cpp map.h
+	$(CC) $(CFLAGS) map.cpp
 
 clean:
 	rm -rf *.o awnw

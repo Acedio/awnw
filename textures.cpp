@@ -12,13 +12,28 @@ using namespace std;
 
 #include "textures.h"
 #include "perlin.h"
+#include "map.h"
 
+void cloudify(GLfloat *map, int w, int h, GLfloat cover, GLfloat sharpness){
+	int y;
+	for(y = 0; y < h; y++){
+		int x;
+		for(x = 0; x < w; x++){
+			GLfloat c = map[y*w+x] - cover;
+			if(c < 0){
+				map[y*w+x] = 0;
+			} else {
+				map[y*w+x] = 1 - pow(sharpness,c);
+			}
+		}
+	}
+}
 
 GLuint make_cloud_texture(){
 	//this works well for 256x256 clouds
 	int power = 8;
 	int size = pow((GLfloat)2,power);
-	GLfloat *perlin = perlin_noise(power,.5,0,5);
+	GLfloat *perlin = perlin_noise(power,power,.5,0,5);
 
 	cloudify(perlin, size, size, .25, .01);
 
@@ -58,7 +73,7 @@ GLuint make_ground_texture(){
 	int power = 8;
 	int size = pow((GLfloat)2,power);
 
-	GLfloat *tex = perlin_noise(power,0.75,2,power);
+	GLfloat *tex = perlin_noise(power,power,0.75,2,power);
 
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -84,19 +99,27 @@ GLuint make_grass_texture(){
 	int power = 8;
 	int size = pow((GLfloat)2,power);
 
-	GLfloat *green = perlin_noise(power,0.75,2,power);
-	GLfloat *yellow = perlin_noise(power,0.5,4,power);
-	GLfloat *blades_nostretch = perlin_noise(power-2,1,0,power-2);
-	GLfloat *blades = smooth_stretch_map(blades_nostretch,size/4,size/4,1,4);
+	GLfloat *green = perlin_noise(power,power,0.75,2,power);
+	GLfloat *yellow = perlin_noise(power,power,0.5,4,power);
+	GLfloat *blades_nostretch = perlin_noise(power,power-2,1,0,power-2);
+	to_file(blades_nostretch,size,size>>2,"nostretch.pgm");
+	GLfloat *blades_norotate = smooth_stretch_map(blades_nostretch,size,size>>2,1,4);
+	to_file(blades_norotate,size,size,"norotate.pgm");
 	delete[] blades_nostretch;
+	GLfloat *blades = rotate_map(blades_norotate,size,size,3.14159/4);
+	to_file(blades,size,size,"blades.pgm");
+	delete[] blades_norotate;
 	GLfloat *tex = new GLfloat[size*size*3];
 	for(int y = 0; y < size; y++){
 		for(int x = 0; x < size; x++){
 			tex[y*size*3+x*3+0] = 0;
-			tex[y*size*3+x*3+1] = (green[y*size+x]/2+yellow[y*size+x]/2)*blades[y*size/4+x%(size/4)];
-			tex[y*size*3+x*3+2] = (yellow[y*size+x]/2)*blades[y*size/4+x%(size/4)];
+			tex[y*size*3+x*3+1] = (green[y*size+x]/2+yellow[y*size+x]/2)*blades[y*size+x];
+			tex[y*size*3+x*3+2] = (yellow[y*size+x]/2)*blades[y*size+x];
 		}
 	}
+	delete[] green;
+	delete[] yellow;
+	delete[] blades;
 	//rgb_to_file(tex,size,size,"lol.ppm");
 
 	GLuint texture;

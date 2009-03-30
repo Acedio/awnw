@@ -12,8 +12,6 @@ GLfloat *create_noise_map(int w, int h);
 GLfloat *linear_stretch_map(GLfloat *map, int w, int h, int x_scale, int y_scale);
 GLfloat *smooth_stretch_map(GLfloat *map, int w, int h, int x_scale, int y_scale);
 
-GLfloat *perlin_noise(int size, GLfloat persistence, int start, int end);
-
-void cloudify(GLfloat *map, int w, int h, GLfloat cover, GLfloat sharpness);
+GLfloat *perlin_noise(int x_pow, int y_pow, GLfloat persistence, int start, int end);
 
 #endif

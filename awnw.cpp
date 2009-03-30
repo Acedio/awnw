@@ -303,7 +303,7 @@ int main(int argc, char **argv){
 	srand(time(0));
 	size = (int)pow((GLfloat)2,power);
 	//current_heightmap = make_terramap(power,.25);
-	GLfloat *perlin = perlin_noise(power,.5,0,power-1);
+	GLfloat *perlin = perlin_noise(power,power,.5,0,power-1);
 	current_heightmap = d1_to_d2(perlin, size, size);
 	delete[] perlin;
 	current_heightmap = normalize(current_heightmap, size, size, 15);
@@ -324,10 +324,6 @@ int main(int argc, char **argv){
 	}
 
 	SDL_WM_SetCaption("Terrain!", NULL);
-
-	SDL_WM_GrabInput(SDL_GRAB_ON);
-
-	SDL_ShowCursor(SDL_DISABLE);
 
 	glEnable(GL_DEPTH_TEST); // for z buffering
 	glShadeModel(GL_SMOOTH);
@@ -356,6 +352,10 @@ int main(int argc, char **argv){
 	ground_texture = make_ground_texture();
 
 	grass_texture = make_grass_texture();
+
+	SDL_WM_GrabInput(SDL_GRAB_ON);
+
+	SDL_ShowCursor(SDL_DISABLE);
 
 	while(running){
 		SDL_Event event;
