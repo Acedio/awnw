@@ -102,12 +102,9 @@ GLuint make_grass_texture(){
 	GLfloat *green = perlin_noise(power,power,0.75,2,power);
 	GLfloat *yellow = perlin_noise(power,power,0.5,4,power);
 	GLfloat *blades_nostretch = perlin_noise(power,power-2,1,0,power-2);
-	to_file(blades_nostretch,size,size>>2,"nostretch.pgm");
 	GLfloat *blades_norotate = smooth_stretch_map(blades_nostretch,size,size>>2,1,4);
-	to_file(blades_norotate,size,size,"norotate.pgm");
 	delete[] blades_nostretch;
-	GLfloat *blades = rotate_map(blades_norotate,size,size,3.14159/4);
-	to_file(blades,size,size,"blades.pgm");
+	GLfloat *blades = rotate_map(blades_norotate,size,size,3.14159/2);
 	delete[] blades_norotate;
 	GLfloat *tex = new GLfloat[size*size*3];
 	for(int y = 0; y < size; y++){
@@ -121,6 +118,44 @@ GLuint make_grass_texture(){
 	delete[] yellow;
 	delete[] blades;
 	//rgb_to_file(tex,size,size,"lol.ppm");
+
+	GLuint texture;
+	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+
+	glGenTextures(1,&texture);
+	glBindTexture(GL_TEXTURE_2D,texture);
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,size,size,GL_RGB,GL_FLOAT,tex);
+
+	delete[] tex;
+
+	return texture;
+}
+
+GLuint make_sand_texture(){
+	int power = 8;
+	int size = pow((GLfloat)2,power);
+
+	GLfloat *dirt = perlin_noise(power, power, .5, 0, power);
+	GLfloat *sand = perlin_noise(power, power, .75, 0, power-2);
+	GLfloat *tex = new GLfloat[size*size*3];
+	for(int y = 0; y < size; y++){
+		for(int x = 0; x < size; x++){
+			tex[y*size*3+x*3+0] = (dirt[y*size+x]*.5+.5)*sand[y*size+x]*.3+.7;
+			tex[y*size*3+x*3+1] = (dirt[y*size+x]*.5+.5)*sand[y*size+x]*.3+.7;
+			tex[y*size*3+x*3+2] = (dirt[y*size+x]*.5+.3)*sand[y*size+x]*.2+.5;
+		}
+	}
+	delete[] dirt;
+	delete[] sand;
+	rgb_to_file(tex,size,size,"lol.ppm");
 
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
