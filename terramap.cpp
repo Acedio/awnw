@@ -115,6 +115,7 @@ void terrain_color(GLfloat **heightmap, int x, int y){
 	} else {
 		glColor3f(1,1,1);
 	}
+	glColor3f(1,1,1);
 }
 
 void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, int w, int h, GLfloat x_scale, GLfloat y_scale, GLfloat z_scale){
@@ -124,22 +125,26 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, int w, in
 		int y;
 		for(y = 0; y < h; y++){
 			terrain_color(heightmap,x%w,y%h);
-			glTexCoord2d(((GLfloat)x)/(GLfloat)w,((GLfloat)y)/(GLfloat)h);
+			//glTexCoord2d(((GLfloat)x)/(GLfloat)w,((GLfloat)y)/(GLfloat)h);
+			glTexCoord2d((GLfloat)(x%32)/(GLfloat)32,(GLfloat)(y%32)/(GLfloat)32);
 			glNormal3fv(normalmap[y][x]);
 			glVertex3f((GLfloat)x*x_scale,((heightmap[y%h][x%w]<1)?1:heightmap[y%h][x%w])*z_scale,(GLfloat)y*y_scale);
 
 			terrain_color(heightmap,x%w,(y+1)%h);
-			glTexCoord2d(((GLfloat)x)/(GLfloat)w,((GLfloat)(y+1))/(GLfloat)h);
+			//glTexCoord2d(((GLfloat)x)/(GLfloat)w,((GLfloat)(y+1))/(GLfloat)h);
+			glTexCoord2d((GLfloat)(x%32)/(GLfloat)32,(GLfloat)(1+y%32)/(GLfloat)32);
 			glNormal3fv(normalmap[(y+1)%h][x]);
 			glVertex3f((GLfloat)x*x_scale,((heightmap[(y+1)%h][x%w]<1)?1:heightmap[(y+1)%h][x%w])*z_scale,(GLfloat)(y+1)*y_scale);
 
 			terrain_color(heightmap,(x+1)%w,(y+1)%h);
-			glTexCoord2d(((GLfloat)(x+1))/(GLfloat)w,((GLfloat)(y+1))/(GLfloat)h);
+			//glTexCoord2d(((GLfloat)(x+1))/(GLfloat)w,((GLfloat)(y+1))/(GLfloat)h);
+			glTexCoord2d((GLfloat)(1+x%32)/(GLfloat)32,(GLfloat)(1+y%32)/(GLfloat)32);
 			glNormal3fv(normalmap[(y+1)%h][(x+1)%w]);
 			glVertex3f((GLfloat)(x+1)*x_scale,((heightmap[(y+1)%h][(x+1)%w]<1)?1:heightmap[(y+1)%h][(x+1)%w])*z_scale,(GLfloat)(y+1)*y_scale);
 
 			terrain_color(heightmap,(x+1)%w,y%h);
-			glTexCoord2d(((GLfloat)(x+1))/(GLfloat)w,((GLfloat)y)/(GLfloat)h);
+			//glTexCoord2d(((GLfloat)(x+1))/(GLfloat)w,((GLfloat)y)/(GLfloat)h);
+			glTexCoord2d((GLfloat)(1+x%32)/(GLfloat)32,(GLfloat)(y%32)/(GLfloat)32);
 			glNormal3fv(normalmap[y][(x+1)%w]);
 			glVertex3f((GLfloat)(x+1)*x_scale,((heightmap[y%h][(x+1)%w]<1)?1:heightmap[y%h][(x+1)%w])*z_scale,(GLfloat)y*y_scale);
 		}

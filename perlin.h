@@ -16,7 +16,4 @@ GLfloat *perlin_noise(int size, GLfloat persistence, int start, int end);
 
 void cloudify(GLfloat *map, int w, int h, GLfloat cover, GLfloat sharpness);
 
-GLuint make_cloud_texture();
-GLuint make_ground_texture();
-
 #endif

@@ -165,76 +165,10 @@ void rgb_to_file(GLfloat *heightmap, int w, int h, string file){
 		int min = 0;
 		for(y = 0; y < h; y++){
 			for(x = 0; x < w; x++){
-				of << (int)(255*(heightmap[y*w+x*3+0]-min)/(max-min)) << " " << (int)(255*(heightmap[y*w+x*3+1]-min)/(max-min)) << " " << (int)(255*(heightmap[y*w+x*3+2]-min)/(max-min)) << " ";
+				of << (int)(255*(heightmap[y*w*3+x*3+0]-min)/(max-min)) << " " << (int)(255*(heightmap[y*w*3+x*3+1]-min)/(max-min)) << " " << (int)(255*(heightmap[y*w*3+x*3+2]-min)/(max-min)) << " ";
 			}
 			of << "\n";
 		}
 		of.close();
 	}
-}
-
-GLuint make_cloud_texture(){
-	//this works well for 256x256 clouds
-	int power = 8;
-	int size = pow((GLfloat)2,power);
-	GLfloat *perlin = perlin_noise(power,.5,0,5);
-
-	cloudify(perlin, size, size, .25, .01);
-
-	GLfloat *tex = new GLfloat[size*size*3];
-	int y;
-	for(y = 0; y < size; y++){
-		int x;
-		for(x = 0; x < size; x++){
-			tex[y*size*3+x*3+0] = perlin[y*size+x];
-			tex[y*size*3+x*3+1] = .7+perlin[y*size+x]*.3;
-			tex[y*size*3+x*3+2] = .8+perlin[y*size+x]*.2;
-		}
-	}
-
-	GLuint texture;
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-
-	glGenTextures(1,&texture);
-	glBindTexture(GL_TEXTURE_2D,texture);
-
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,size,size,GL_RGB,GL_FLOAT,tex);
-
-	delete[] perlin;
-	delete[] tex;
-
-	return texture;
-}
-
-GLuint make_ground_texture(){
-	int power = 8;
-	int size = pow((GLfloat)2,power);
-
-	GLfloat *tex = perlin_noise(power,1.0,2,power);
-
-	GLuint texture;
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-
-	glGenTextures(1,&texture);
-	glBindTexture(GL_TEXTURE_2D,texture);
-
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_LUMINANCE,size,size,GL_LUMINANCE,GL_FLOAT,tex);
-
-	delete[] tex;
-
-	return texture;
 }

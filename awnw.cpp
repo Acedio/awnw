@@ -20,6 +20,7 @@ using namespace std;
 
 #include "terramap.h"
 #include "perlin.h"
+#include "textures.h"
 
 const int SCREEN_W = 800;
 const int SCREEN_H = 600;
@@ -36,15 +37,15 @@ GLfloat spin = 0;
 GLfloat spin_speed = 0.03;
 bool textured = true;
 bool day = true;
-bool fog = false;
-bool light = false;
+bool fog = true;
+bool light = true;
 bool flat = false;
 GLfloat fog_amount = .006;
 GLfloat **current_heightmap;
 GLfloat ***current_normalmap;
 
-GLfloat cloud_movement_x = 0;
-GLfloat cloud_movement_y = 0;
+GLfloat cloud_move_x = 0;
+GLfloat cloud_move_y = 0;
 GLfloat cloud_move_speed = .0005;
 GLfloat cloud_move_angle = 1;
 
@@ -52,6 +53,7 @@ GLfloat x_off = 0, y_off = -50, z_off = -20, h_angle = 0, v_angle = 45;
 
 GLuint cloud_texture;
 GLuint ground_texture;
+GLuint grass_texture;
 
 void draw_terrain(){
 	// Transforms for camera view
@@ -65,7 +67,7 @@ void draw_terrain(){
 	if(spinning){
 		spin += spin_speed;
 	}
-	glBindTexture(GL_TEXTURE_2D, ground_texture);
+	glBindTexture(GL_TEXTURE_2D, grass_texture);
 	if(textured){
 		draw_heightmap_texture(current_heightmap,current_normalmap,size,size,1,1,1);
 	} else {
@@ -91,23 +93,23 @@ void draw_terrain(){
 	double lower_by = 5*radius/6;
 	for(int z = -divisions/2; z < divisions/2; z += 1){
 		for(int x = -divisions/2; x < divisions/2; x += 1){
-			glTexCoord2d(0+cloud_movement_x,0+cloud_movement_y); glVertex3f(x*step,sqrt(radius*radius - x*x*step*step - z*z*step*step)-lower_by,z*step);
-			glTexCoord2d(1+cloud_movement_x,0+cloud_movement_y); glVertex3f((x+1)*step,sqrt(radius*radius - ((x+1)*step)*((x+1)*step) - z*z*step*step)-lower_by,z*step);
-			glTexCoord2d(1+cloud_movement_x,1+cloud_movement_y); glVertex3f((x+1)*step,sqrt(radius*radius - ((x+1)*step)*((x+1)*step) - ((z+1)*step)*((z+1)*step))-lower_by,(z+1)*step);
-			glTexCoord2d(0+cloud_movement_x,1+cloud_movement_y); glVertex3f(x*step,sqrt(radius*radius - x*x*step*step - ((z+1)*step)*((z+1)*step))-lower_by,(z+1)*step);
+			glTexCoord2d(0+cloud_move_x,0+cloud_move_y); glVertex3f(x*step,sqrt(radius*radius - x*x*step*step - z*z*step*step)-lower_by,z*step);
+			glTexCoord2d(1+cloud_move_x,0+cloud_move_y); glVertex3f((x+1)*step,sqrt(radius*radius - ((x+1)*step)*((x+1)*step) - z*z*step*step)-lower_by,z*step);
+			glTexCoord2d(1+cloud_move_x,1+cloud_move_y); glVertex3f((x+1)*step,sqrt(radius*radius - ((x+1)*step)*((x+1)*step) - ((z+1)*step)*((z+1)*step))-lower_by,(z+1)*step);
+			glTexCoord2d(0+cloud_move_x,1+cloud_move_y); glVertex3f(x*step,sqrt(radius*radius - x*x*step*step - ((z+1)*step)*((z+1)*step))-lower_by,(z+1)*step);
 		}
 	}
 	glEnd();
 
 	// Nice slow cloud movement and checks to see if we can set s and t back to 0 for tex repeating
-	cloud_movement_x += cos(cloud_movement_x)*cloud_move_speed;
-	while(cloud_movement_x > 1.0){
-		cloud_movement_x -= 1.0;
+	cloud_move_x += cos(cloud_move_angle)*cloud_move_speed;
+	while(cloud_move_x > 1.0){
+		cloud_move_x -= 1.0;
 	}
 
-	cloud_movement_y += sin(cloud_movement_y)*cloud_move_speed;
-	while(cloud_movement_y > 1.0){
-		cloud_movement_y -= 1.0;
+	cloud_move_y += sin(cloud_move_angle)*cloud_move_speed;
+	while(cloud_move_y > 1.0){
+		cloud_move_y -= 1.0;
 	}
 
 	if(light){
@@ -179,8 +181,10 @@ void keyboard(Uint8 *keys){
 		glDisable(GL_TEXTURE_2D);
 		glDeleteTextures(1,&cloud_texture);
 		glDeleteTextures(1,&ground_texture);
+		glDeleteTextures(1,&grass_texture);
 		cloud_texture = make_cloud_texture();
 		ground_texture = make_ground_texture();
+		grass_texture = make_grass_texture();
 		glEnable(GL_TEXTURE_2D);
 	}
 	if(keys[SDLK_o]){
@@ -299,7 +303,7 @@ int main(int argc, char **argv){
 	srand(time(0));
 	size = (int)pow((GLfloat)2,power);
 	//current_heightmap = make_terramap(power,.25);
-	GLfloat *perlin = perlin_noise(power,.5,0,power);
+	GLfloat *perlin = perlin_noise(power,.5,0,power-1);
 	current_heightmap = d1_to_d2(perlin, size, size);
 	delete[] perlin;
 	current_heightmap = normalize(current_heightmap, size, size, 15);
@@ -329,6 +333,18 @@ int main(int argc, char **argv){
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_TEXTURE_2D);
 
+	glEnable(GL_LIGHTING);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
+	glEnable(GL_LIGHT0);
+
+	glEnable(GL_FOG);
+	glFogi(GL_FOG_MODE, GL_EXP2);
+	GLfloat fog_color[] = {0.8, 0.8, 0.8, 1.0};
+	glFogfv(GL_FOG_COLOR, fog_color);
+	glFogf(GL_FOG_DENSITY, fog_amount);
+	glHint(GL_FOG_HINT, GL_NICEST);
+
 	glClearColor(0,0,0,1);
 
 	resize(cur_screen_w, cur_screen_h);
@@ -338,6 +354,8 @@ int main(int argc, char **argv){
 	cloud_texture = make_cloud_texture();
 
 	ground_texture = make_ground_texture();
+
+	grass_texture = make_grass_texture();
 
 	while(running){
 		SDL_Event event;
