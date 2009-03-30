@@ -176,14 +176,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\map.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\map.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\perlin.cpp"
 				>
 			</File>
@@ -197,14 +189,6 @@
 			</File>
 			<File
 				RelativePath="..\..\terramap.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\textures.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\textures.h"
 				>
 			</File>
 		</Filter>
