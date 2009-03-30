@@ -351,7 +351,9 @@ int main(int argc, char **argv){
 
 	ground_texture = make_ground_texture();
 
-	grass_texture = make_grass_texture();
+	grass_texture = //make_grass_texture();
+
+	make_sand_texture();
 
 	SDL_WM_GrabInput(SDL_GRAB_ON);
 
