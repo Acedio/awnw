@@ -51,9 +51,9 @@ GLfloat cloud_move_angle = 1;
 
 GLfloat x_off = 0, y_off = -50, z_off = -20, h_angle = 0, v_angle = 45;
 
+GLuint textures[TEXTURE_COUNT];
+
 GLuint cloud_texture;
-GLuint ground_texture;
-GLuint grass_texture;
 
 void draw_terrain(){
 	// Transforms for camera view
@@ -67,11 +67,11 @@ void draw_terrain(){
 	if(spinning){
 		spin += spin_speed;
 	}
-	glBindTexture(GL_TEXTURE_2D, grass_texture);
+	//glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
 	if(textured){
-		draw_heightmap_texture(current_heightmap,current_normalmap,size,size,1,1,1);
+		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
 	} else {
-		draw_heightmap_vector(current_heightmap,size,size,1,1,1);
+		draw_heightmap_vector(current_heightmap,size,size);
 	}
 	glTranslatef(size/2,0,size/2); // Translate to center so the clouds are drawn around the center
 	glRotatef(-spin,0,1,0); // Spin back so the clouds don't rotate with the land
@@ -180,11 +180,11 @@ void keyboard(Uint8 *keys){
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
 		glDeleteTextures(1,&cloud_texture);
-		glDeleteTextures(1,&ground_texture);
-		glDeleteTextures(1,&grass_texture);
+		glDeleteTextures(1,&textures[TEXTURE_GRASS]);
+		glDeleteTextures(1,&textures[TEXTURE_SAND]);
 		cloud_texture = make_cloud_texture();
-		ground_texture = make_ground_texture();
-		grass_texture = make_grass_texture();
+		textures[TEXTURE_SAND] = make_sand_texture();
+		textures[TEXTURE_GRASS] = make_grass_texture();
 		glEnable(GL_TEXTURE_2D);
 	}
 	if(keys[SDLK_o]){
@@ -349,15 +349,16 @@ int main(int argc, char **argv){
 
 	cloud_texture = make_cloud_texture();
 
-	ground_texture = make_ground_texture();
-
-	grass_texture = //make_grass_texture();
-
-	make_sand_texture();
+	textures[TEXTURE_DEFAULT] = 0;
+	textures[TEXTURE_GRASS] = make_grass_texture();
+	textures[TEXTURE_SAND] = make_sand_texture();
 
 	SDL_WM_GrabInput(SDL_GRAB_ON);
 
 	SDL_ShowCursor(SDL_DISABLE);
+
+	int frames = 0;
+	int start = SDL_GetTicks();
 
 	while(running){
 		SDL_Event event;
@@ -417,12 +418,20 @@ int main(int argc, char **argv){
 		draw_terrain();
 
 		SDL_GL_SwapBuffers();
+		frames++;
+		if(frames >= 100){
+			int millis = SDL_GetTicks() - start;
+			cout << (1000 * frames) / millis << " FPS" << endl;
+			frames = 0;
+			start = SDL_GetTicks();
+		}
 	}
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_TEXTURE_2D);
 	glDeleteTextures(1,&cloud_texture);
-	glDeleteTextures(1,&ground_texture);
+	glDeleteTextures(1,&textures[TEXTURE_GRASS]);
+	glDeleteTextures(1,&textures[TEXTURE_SAND]);
 
 	SDL_WM_GrabInput(SDL_GRAB_OFF);
 

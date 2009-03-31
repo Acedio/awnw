@@ -11,6 +11,8 @@
 
 using namespace std;
 
+#include "textures.h"
+
 GLfloat **create_heightmap(int w, int h);
 
 GLfloat **make_terramap(int power, GLfloat displace);
@@ -18,9 +20,9 @@ GLfloat ***make_normalmap(GLfloat **heightmap, int w, int h);
 
 void display_heightmap(GLfloat **heightmap, int w, int h);
 
-void draw_heightmap_vector(GLfloat **heightmap, int w, int h, GLfloat x_scale, GLfloat y_scale, GLfloat z_scale);
+void draw_heightmap_vector(GLfloat **heightmap, int w, int h);
 void terrain_color(GLfloat **heightmap, int x, int y);
-void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, int w, int h, GLfloat x_scale, GLfloat y_scale, GLfloat z_scale);
+void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint textures[TEXTURE_COUNT], int w, int h);
 
 void oceanify(GLfloat **heightmap, int w, int h, GLfloat min);
 void hillify(GLfloat **heightmap, int w, int h, GLfloat flatness);

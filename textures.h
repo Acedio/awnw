@@ -14,4 +14,9 @@ GLuint make_sand_texture();
 
 void cloudify(GLfloat *map, int w, int h, GLfloat cover, GLfloat sharpness);
 
+const int TEXTURE_DEFAULT = 0;
+const int TEXTURE_GRASS = 1;
+const int TEXTURE_SAND = 2;
+const int TEXTURE_COUNT = 3;
+
 #endif

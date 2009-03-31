@@ -111,7 +111,7 @@ GLuint make_grass_texture(){
 		for(int x = 0; x < size; x++){
 			tex[y*size*3+x*3+0] = 0;
 			tex[y*size*3+x*3+1] = (green[y*size+x]/2+yellow[y*size+x]/2)*blades[y*size+x];
-			tex[y*size*3+x*3+2] = (yellow[y*size+x]/2)*blades[y*size+x];
+			tex[y*size*3+x*3+2] = (yellow[y*size+x]/2)*blades[y*size+x]*.6;
 		}
 	}
 	delete[] green;
