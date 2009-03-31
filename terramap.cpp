@@ -135,31 +135,29 @@ inline GLuint terrain_texture(GLfloat **heightmap, int x, int y, GLuint textures
 
 void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint textures[TEXTURE_COUNT], int w, int h){
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
-	glBegin(GL_QUADS);
 	glColor3f(1,1,1);
+	glBegin(GL_TRIANGLE_STRIP);
 	for(int y = 0; y < h; y++){
-		GLfloat fy = (GLfloat)(y%32)/32.0;
-		GLfloat fy1 = (GLfloat)(1+y%32)/32.0;
-		for(int x = 0; x < w; x++){
-			GLfloat fx = (GLfloat)(x%32)/32.0;
-			GLfloat fx1 = (GLfloat)(1+x%32)/32.0;
+		GLfloat fy = (GLfloat)(y)/32.0;
+		GLfloat fy1 = (GLfloat)(1+y)/32.0;
+		for(int x = 0; x <= w; x++){
+			GLfloat fx = (GLfloat)(x)/32.0;
 
 			glTexCoord2d(fx,fy);
-			glNormal3fv(normalmap[y][x]);
-			glVertex3f((GLfloat)x,((heightmap[y][x]<1)?1:heightmap[y][x]),(GLfloat)y);
+			glNormal3fv(normalmap[y%h][x%w]);
+			glVertex3f((GLfloat)x,((heightmap[y%h][x%w]<1)?1:heightmap[y%h][x%w]),(GLfloat)y);
 
 			glTexCoord2d(fx,fy1);
-			glNormal3fv(normalmap[(y+1)%h][x]);
-			glVertex3f((GLfloat)x,((heightmap[(y+1)%h][x]<1)?1:heightmap[(y+1)%h][x]),(GLfloat)(y+1));
-
-			glTexCoord2d(fx1,fy1);
-			glNormal3fv(normalmap[(y+1)%h][(x+1)%w]);
-			glVertex3f((GLfloat)(x+1),((heightmap[(y+1)%h][(x+1)%w]<1)?1:heightmap[(y+1)%h][(x+1)%w]),(GLfloat)(y+1));
-
-			glTexCoord2d(fx1,fy);
-			glNormal3fv(normalmap[y][(x+1)%w]);
-			glVertex3f((GLfloat)(x+1),((heightmap[y][(x+1)%w]<1)?1:heightmap[y][(x+1)%w]),(GLfloat)y);
+			glNormal3fv(normalmap[(y+1)%h][x%w]);
+			glVertex3f((GLfloat)x,((heightmap[(y+1)%h][x%w]<1)?1:heightmap[(y+1)%h][x%w]),(GLfloat)(y+1));
 		}
+		glTexCoord2d((GLfloat)(w%32)/32.0,fy1);
+		glNormal3fv(normalmap[(y+1)%h][0]);
+		glVertex3f((GLfloat)w,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
+
+		glTexCoord2d(0,fy1);
+		glNormal3fv(normalmap[(y+1)%h][0]);
+		glVertex3f((GLfloat)0,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
 	}
 	glEnd();
 }

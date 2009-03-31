@@ -30,7 +30,7 @@ const float PI = 3.1415;
 
 bool running = true;
 
-int power=8, size;
+int power=7, size;
 GLfloat hill_factor = .97;
 bool spinning = false;
 GLfloat spin = 0;
@@ -429,7 +429,7 @@ int main(int argc, char **argv){
 
 		SDL_GL_SwapBuffers();
 		frames++;
-		if(frames >= 100){
+		if(frames >= 1000){
 			int millis = SDL_GetTicks() - start;
 			cout << (1000 * frames) / millis << " FPS" << endl;
 			frames = 0;
