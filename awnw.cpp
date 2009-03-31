@@ -30,7 +30,7 @@ const float PI = 3.1415;
 
 bool running = true;
 
-int power=7, size;
+int power=8, size;
 GLfloat hill_factor = .97;
 bool spinning = false;
 GLfloat spin = 0;
@@ -55,6 +55,27 @@ GLuint textures[TEXTURE_COUNT];
 
 GLuint cloud_texture;
 
+GLuint terrain_dl;
+
+void make_textures(){
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_TEXTURE_2D);
+	if(glIsTexture(cloud_texture)){
+		glDeleteTextures(1,&cloud_texture);
+	}
+	textures[TEXTURE_DEFAULT] = 0;
+	if(glIsTexture(textures[TEXTURE_GRASS])){
+		glDeleteTextures(1,&textures[TEXTURE_GRASS]);
+	}
+	if(glIsTexture(textures[TEXTURE_SAND])){
+		glDeleteTextures(1,&textures[TEXTURE_SAND]);
+	}
+	cloud_texture = make_cloud_texture();
+	textures[TEXTURE_SAND] = make_sand_texture();
+	textures[TEXTURE_GRASS] = make_grass_texture();
+	glEnable(GL_TEXTURE_2D);
+}
+
 void draw_terrain(){
 	// Transforms for camera view
 	glLoadIdentity();
@@ -69,7 +90,8 @@ void draw_terrain(){
 	}
 	//glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
 	if(textured){
-		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
+		//draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
+		glCallList(terrain_dl);
 	} else {
 		draw_heightmap_vector(current_heightmap,size,size);
 	}
@@ -173,19 +195,8 @@ void keyboard(Uint8 *keys){
 	if(keys[SDLK_z]){
 		current_heightmap = make_terramap(power,.25);
 		current_heightmap = normalize(current_heightmap, size, size, 15);
-		if(textured){
-			//oceanify(current_heightmap, size, size, 0.1);
-		}
 		current_normalmap = make_normalmap(current_heightmap,size,size);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
-		glDeleteTextures(1,&cloud_texture);
-		glDeleteTextures(1,&textures[TEXTURE_GRASS]);
-		glDeleteTextures(1,&textures[TEXTURE_SAND]);
-		cloud_texture = make_cloud_texture();
-		textures[TEXTURE_SAND] = make_sand_texture();
-		textures[TEXTURE_GRASS] = make_grass_texture();
-		glEnable(GL_TEXTURE_2D);
+		make_textures();
 	}
 	if(keys[SDLK_o]){
 		oceanify(current_heightmap, size, size, 0.1);
@@ -220,9 +231,6 @@ void keyboard(Uint8 *keys){
 	}
 	if(keys[SDLK_t]){
 		textured = !textured;
-		if(textured){
-			//oceanify(current_heightmap, size, size, 0.1);
-		}
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 	}
 	if(keys[SDLK_c]){
@@ -303,7 +311,7 @@ int main(int argc, char **argv){
 	srand(time(0));
 	size = (int)pow((GLfloat)2,power);
 	//current_heightmap = make_terramap(power,.25);
-	GLfloat *perlin = perlin_noise(power,power,.5,0,power-1);
+	GLfloat *perlin = perlin_noise(power,power,.5,1,power-1);
 	current_heightmap = d1_to_d2(perlin, size, size);
 	delete[] perlin;
 	current_heightmap = normalize(current_heightmap, size, size, 15);
@@ -347,11 +355,13 @@ int main(int argc, char **argv){
 
 	GLfloat light_pos[] = {0,50,0,1.0};
 
-	cloud_texture = make_cloud_texture();
+	make_textures();
 
-	textures[TEXTURE_DEFAULT] = 0;
-	textures[TEXTURE_GRASS] = make_grass_texture();
-	textures[TEXTURE_SAND] = make_sand_texture();
+	terrain_dl = glGenLists(1);
+	
+	glNewList(terrain_dl,GL_COMPILE);
+	draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
+	glEndList();
 
 	SDL_WM_GrabInput(SDL_GRAB_ON);
 
@@ -432,6 +442,8 @@ int main(int argc, char **argv){
 	glDeleteTextures(1,&cloud_texture);
 	glDeleteTextures(1,&textures[TEXTURE_GRASS]);
 	glDeleteTextures(1,&textures[TEXTURE_SAND]);
+
+	glDeleteLists(terrain_dl,1);
 
 	SDL_WM_GrabInput(SDL_GRAB_OFF);
 
