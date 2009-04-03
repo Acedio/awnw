@@ -7,6 +7,7 @@
 
 #include <cstdlib>
 #include <cmath>
+#include <ctime>
 
 using namespace std;
 
@@ -87,6 +88,7 @@ GLfloat *smooth_stretch_map(GLfloat *map, int w, int h, int x_scale, int y_scale
 }
 
 GLfloat *perlin_noise(int x_pow, int y_pow, GLfloat persistence, int start, int end){
+	srand(time(0));
 	if(end > x_pow || end > y_pow || start < 0 || end < start){
 		return NULL;
 	}

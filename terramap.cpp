@@ -134,8 +134,11 @@ inline GLuint terrain_texture(GLfloat **heightmap, int x, int y, GLuint textures
 }
 
 void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint textures[TEXTURE_COUNT], int w, int h){
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glColor3f(1,1,1);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SAND]);
 	glBegin(GL_TRIANGLE_STRIP);
 	for(int y = 0; y < h; y++){
 		GLfloat fy = (GLfloat)(y)/32.0;
@@ -160,6 +163,72 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint te
 		glVertex3f((GLfloat)0,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
 	}
 	glEnd();
+
+	glDepthFunc(GL_EQUAL);
+
+	glActiveTextureARB(GL_TEXTURE0);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ALPHA]);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE0);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA);
+
+	glActiveTextureARB(GL_TEXTURE1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE1);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE1);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_PREVIOUS);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA);
+
+	glBegin(GL_TRIANGLE_STRIP);
+	for(int y = 0; y < h; y++){
+		GLfloat fy = (GLfloat)(y)/32.0;
+		GLfloat fy1 = (GLfloat)(1+y)/32.0;
+		for(int x = 0; x <= w; x++){
+			GLfloat fx = (GLfloat)(x)/32.0;
+
+			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,fx,fy);
+			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,fx,fy);
+			glNormal3fv(normalmap[y%h][x%w]);
+			glVertex3f((GLfloat)x,((heightmap[y%h][x%w]<1)?1:heightmap[y%h][x%w]),(GLfloat)y);
+
+			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,fx,fy1);
+			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,fx,fy1);
+			glNormal3fv(normalmap[(y+1)%h][x%w]);
+			glVertex3f((GLfloat)x,((heightmap[(y+1)%h][x%w]<1)?1:heightmap[(y+1)%h][x%w]),(GLfloat)(y+1));
+		}
+		glMultiTexCoord2fARB(GL_TEXTURE0_ARB,(GLfloat)(w%32)/32.0,fy1);
+		glMultiTexCoord2fARB(GL_TEXTURE1_ARB,(GLfloat)(w%32)/32.0,fy1);
+		glNormal3fv(normalmap[(y+1)%h][0]);
+		glVertex3f((GLfloat)w,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
+
+		glMultiTexCoord2fARB(GL_TEXTURE0_ARB,0,fy1);
+		glMultiTexCoord2fARB(GL_TEXTURE1_ARB,0,fy1);
+		glNormal3fv(normalmap[(y+1)%h][0]);
+		glVertex3f((GLfloat)0,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
+	}
+	glEnd();
+
+	glActiveTextureARB(GL_TEXTURE1_ARB);
+	glBindTexture(GL_TEXTURE_2D, NULL);
+	glDisable(GL_TEXTURE_2D);
+
+	glActiveTextureARB(GL_TEXTURE0_ARB);
+	glBindTexture(GL_TEXTURE_2D, NULL);
+	glDisable(GL_TEXTURE_2D);
+
+	glEnable(GL_TEXTURE_2D);
+
+	glDepthFunc(GL_LESS);
+
+	glDisable(GL_BLEND);
 }
 
 GLfloat ***make_normalmap(GLfloat **heightmap, int w, int h){

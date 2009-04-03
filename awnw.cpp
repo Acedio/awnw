@@ -70,9 +70,33 @@ void make_textures(){
 	if(glIsTexture(textures[TEXTURE_SAND])){
 		glDeleteTextures(1,&textures[TEXTURE_SAND]);
 	}
+	if(glIsTexture(textures[TEXTURE_ALPHA])){
+		glDeleteTextures(1,&textures[TEXTURE_ALPHA]);
+	}
 	cloud_texture = make_cloud_texture();
 	textures[TEXTURE_SAND] = make_sand_texture();
 	textures[TEXTURE_GRASS] = make_grass_texture();
+
+	GLfloat *perlin = perlin_noise(power,power,.5,1,power-1);
+	GLuint texture;
+	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+
+	glGenTextures(1,&texture);
+	glBindTexture(GL_TEXTURE_2D,texture);
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_ALPHA,size,size,GL_ALPHA,GL_FLOAT,perlin);
+
+	delete[] perlin;
+
+	textures[TEXTURE_ALPHA] = texture;
+
 	glEnable(GL_TEXTURE_2D);
 }
 
