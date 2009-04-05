@@ -76,6 +76,8 @@ GLfloat **make_terramap(int power, GLfloat displace){
 void draw_heightmap_vector(GLfloat **heightmap, int w, int h){
 	int x;
 	glColor3f(0,.1,0); // solid first
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(2,2);
 	glBegin(GL_QUADS);
 	for(x = 0; x < w; x++){
 		int y;
@@ -87,8 +89,8 @@ void draw_heightmap_vector(GLfloat **heightmap, int w, int h){
 		}
 	}
 	glEnd();
-	glTranslatef(0,.05,0); // up a bit so we don't get z fighting
 	glColor3f(0,1,0); // now for vector lines
+	glPolygonOffset(1,1);
 	glBegin(GL_LINES);
 	for(x = 0; x < w; x++){
 		int y;
@@ -101,7 +103,7 @@ void draw_heightmap_vector(GLfloat **heightmap, int w, int h){
 		}
 	}
 	glEnd();
-	glTranslatef(0,-.05,0);
+	glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 inline void terrain_color(GLfloat **heightmap, int x, int y){
@@ -134,12 +136,12 @@ inline GLuint terrain_texture(GLfloat **heightmap, int x, int y, GLuint textures
 }
 
 void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint textures[TEXTURE_COUNT], int w, int h){
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 	glColor3f(1,1,1);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SAND]);
-	glBegin(GL_TRIANGLE_STRIP);
+	//glEnable(GL_POLYGON_OFFSET_FILL);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//glPolygonOffset(2,2);
+	//glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SAND]);
+	/*glBegin(GL_TRIANGLE_STRIP);
 	for(int y = 0; y < h; y++){
 		GLfloat fy = (GLfloat)(y)/32.0;
 		GLfloat fy1 = (GLfloat)(1+y)/32.0;
@@ -162,31 +164,59 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint te
 		glNormal3fv(normalmap[(y+1)%h][0]);
 		glVertex3f((GLfloat)0,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
 	}
-	glEnd();
+	glEnd();*/
 
-	glDepthFunc(GL_EQUAL);
+	glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_CULL_FACE);
+	//glFrontFace(GL_CCW);
 
-	glActiveTextureARB(GL_TEXTURE0);
-	glEnable(GL_TEXTURE_2D);
+	//glDepthFunc(GL_LESS); // <-- Those stupid triangles are caused by something like this
+
+	//glBlendFunc(GL_ONE, GL_ZERO);
+
+	glActiveTexture(GL_TEXTURE0);
+	//glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ALPHA]);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_TEXTURE0);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA);
 
-	glActiveTextureARB(GL_TEXTURE1);
+	glActiveTexture(GL_TEXTURE1);
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE1);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB_ARB, GL_TEXTURE1);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB_ARB, GL_SRC_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA_ARB, GL_PREVIOUS);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA_ARB, GL_SRC_ALPHA);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_ALPHA_ARB, GL_PREVIOUS);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA_ARB, GL_SRC_ALPHA);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE0);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_ALPHA);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE1);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
 
+	glActiveTexture(GL_TEXTURE2);
+	glEnable(GL_TEXTURE_2D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE0);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_ONE_MINUS_SRC_ALPHA);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE2);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
+	glMatrixMode(GL_TEXTURE);
+	glLoadIdentity();
+	glTranslatef(.5,.5,0);
+	glRotatef(45,0,0,1);
+	glTranslatef(-.5,-.5,0);
+	glMatrixMode(GL_MODELVIEW);
+	/*glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SRC0_RGB, GL_PREVIOUS);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SRC1_RGB, GL_TEXTURE2);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_MODULATE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SRC0_ALPHA, GL_PREVIOUS);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SRC1_ALPHA, GL_TEXTURE2);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA);*/
+
+	//glPolygonOffset(1,1);
 	glBegin(GL_TRIANGLE_STRIP);
 	for(int y = 0; y < h; y++){
 		GLfloat fy = (GLfloat)(y)/32.0;
@@ -194,41 +224,49 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint te
 		for(int x = 0; x <= w; x++){
 			GLfloat fx = (GLfloat)(x)/32.0;
 
-			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,fx,fy);
-			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,fx,fy);
+			glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
 			glNormal3fv(normalmap[y%h][x%w]);
 			glVertex3f((GLfloat)x,((heightmap[y%h][x%w]<1)?1:heightmap[y%h][x%w]),(GLfloat)y);
 
-			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,fx,fy1);
-			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,fx,fy1);
+			glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
 			glNormal3fv(normalmap[(y+1)%h][x%w]);
 			glVertex3f((GLfloat)x,((heightmap[(y+1)%h][x%w]<1)?1:heightmap[(y+1)%h][x%w]),(GLfloat)(y+1));
 		}
-		glMultiTexCoord2fARB(GL_TEXTURE0_ARB,(GLfloat)(w%32)/32.0,fy1);
-		glMultiTexCoord2fARB(GL_TEXTURE1_ARB,(GLfloat)(w%32)/32.0,fy1);
+		glMultiTexCoord2f(GL_TEXTURE0,((GLfloat)1),(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE1,((GLfloat)1),(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE2,((GLfloat)1),(GLfloat)(y+1)/(GLfloat)h);
 		glNormal3fv(normalmap[(y+1)%h][0]);
 		glVertex3f((GLfloat)w,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
 
-		glMultiTexCoord2fARB(GL_TEXTURE0_ARB,0,fy1);
-		glMultiTexCoord2fARB(GL_TEXTURE1_ARB,0,fy1);
+		glMultiTexCoord2f(GL_TEXTURE0,0,(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE1,0,(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE2,0,(GLfloat)(y+1)/(GLfloat)h);
 		glNormal3fv(normalmap[(y+1)%h][0]);
 		glVertex3f((GLfloat)0,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
 	}
 	glEnd();
 
-	glActiveTextureARB(GL_TEXTURE1_ARB);
+	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, NULL);
 	glDisable(GL_TEXTURE_2D);
 
-	glActiveTextureARB(GL_TEXTURE0_ARB);
+	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, NULL);
 	glDisable(GL_TEXTURE_2D);
 
-	glEnable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, NULL);
+	glDisable(GL_TEXTURE_2D);
 
-	glDepthFunc(GL_LESS);
+	//glDisable(GL_POLYGON_OFFSET_FILL);
 
-	glDisable(GL_BLEND);
+	//glDepthFunc(GL_LESS);
+
+	//glDisable(GL_BLEND);
 }
 
 GLfloat ***make_normalmap(GLfloat **heightmap, int w, int h){

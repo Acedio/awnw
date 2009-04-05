@@ -1,7 +1,7 @@
 // RANDOM TERRAMAP
 // By Josh Simmons 2009
 
-//TODO: Make a new rand() and modify perlin() so when the same params are passed, the same terrain is generated
+//TODO: Fix normal map creation to set vertex normals equal to the mean of the six surrounding surface normals.
 
 #ifdef _WIN32
 #include <windows.h>
@@ -77,7 +77,12 @@ void make_textures(){
 	textures[TEXTURE_SAND] = make_sand_texture();
 	textures[TEXTURE_GRASS] = make_grass_texture();
 
-	GLfloat *perlin = perlin_noise(power,power,.5,1,power-1);
+	//GLfloat *perlin = perlin_noise(power,power,.5,1,power-1);
+	//cloudify(perlin, size, size, .25, .01);
+	GLfloat *perlin = new GLfloat[size*size];
+	for(int i = 0; i < size*size; i++){
+		perlin[i] = (GLfloat)i/(GLfloat)(size*size);
+	}
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 
@@ -123,6 +128,8 @@ void draw_terrain(){
 	glRotatef(-spin,0,1,0); // Spin back so the clouds don't rotate with the land
 
 	// draw cloud spehere
+
+	glEnable(GL_TEXTURE_2D);
 
 	glBindTexture(GL_TEXTURE_2D, cloud_texture);
 	glColor3f(1,1,1);
