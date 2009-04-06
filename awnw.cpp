@@ -1,7 +1,7 @@
 // RANDOM TERRAMAP
 // By Josh Simmons 2009
 
-//TODO: Fix normal map creation to set vertex normals equal to the mean of the six surrounding surface normals.
+//TODO: Fix normal map creation to set vertex normals equal to the mean of the six surrounding surface normals. http://www.gamedev.net/reference/programming/features/normalheightfield/
 
 #ifdef _WIN32
 #include <windows.h>
@@ -77,12 +77,12 @@ void make_textures(){
 	textures[TEXTURE_SAND] = make_sand_texture();
 	textures[TEXTURE_GRASS] = make_grass_texture();
 
-	//GLfloat *perlin = perlin_noise(power,power,.5,1,power-1);
-	//cloudify(perlin, size, size, .25, .01);
-	GLfloat *perlin = new GLfloat[size*size];
+	GLfloat *perlin = perlin_noise(power,power,.5,1,power-1);
+	cloudify(perlin, size, size, .25, .01);
+	/*GLfloat *perlin = new GLfloat[size*size];
 	for(int i = 0; i < size*size; i++){
 		perlin[i] = (GLfloat)i/(GLfloat)(size*size);
-	}
+	}*/
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 
@@ -106,6 +106,7 @@ void make_textures(){
 }
 
 void draw_terrain(){
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// Transforms for camera view
 	glLoadIdentity();
 	glRotatef(h_angle,0,1,0);
@@ -117,9 +118,7 @@ void draw_terrain(){
 	if(spinning){
 		spin += spin_speed;
 	}
-	//glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
 	if(textured){
-		//draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
 		glCallList(terrain_dl);
 	} else {
 		draw_heightmap_vector(current_heightmap,size,size);
@@ -401,6 +400,10 @@ int main(int argc, char **argv){
 	int frames = 0;
 	int start = SDL_GetTicks();
 
+	GLint max;
+	glGetIntegerv(GL_MAX_TEXTURE_UNITS, &max);
+	cout << "max: " << max << endl;
+
 	while(running){
 		SDL_Event event;
 		while(SDL_PollEvent(&event)){
@@ -453,8 +456,6 @@ int main(int argc, char **argv){
 		}
 
 		keyboard(keys);
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		draw_terrain();
 
