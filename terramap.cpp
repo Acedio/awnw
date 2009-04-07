@@ -15,14 +15,13 @@ using namespace std;
 #include "terramap.h"
 #include "textures.h"
 
-GLfloat **create_heightmap(int w, int h){
-	GLfloat **heightmap = new GLfloat*[h];
+GLfloat *create_heightmap(int w, int h){
+	GLfloat *heightmap = new GLfloat[w*h];
 	int y;
 	for(y = 0; y < h; y++){
-		heightmap[y] = new GLfloat[w];
 		int x;
 		for(x = 0; x < w; x++){
-			heightmap[y][x] = 0;
+			heightmap[y*w+x] = 0;
 		}
 	}
 	return heightmap;
@@ -32,18 +31,18 @@ GLfloat rand_float(){
 	return 2*((GLfloat)rand()/(GLfloat)RAND_MAX) - 1;
 }
 
-void display_heightmap(GLfloat **heightmap, int w, int h){
+void display_heightmap(GLfloat *heightmap, int w, int h){
 	for(int y = 0; y < h; y++){
 		for(int x = 0; x < w; x++){
-			cout << heightmap[y][x] << "\t";
+			cout << heightmap[y*w+x] << "\t";
 		}
 		cout << endl;
 	}
 }
 
-GLfloat **make_terramap(int power, GLfloat displace){
+GLfloat *make_terramap(int power, GLfloat displace){
 	int size = (int)pow((GLfloat)2,power);
-	GLfloat **heightmap = create_heightmap(size, size);
+	GLfloat *heightmap = create_heightmap(size, size);
 	int level;
 	for(level = 0; level < power; level++){
 		int inc = size/(int)pow((GLfloat)2,level);
@@ -53,27 +52,27 @@ GLfloat **make_terramap(int power, GLfloat displace){
 		for(x = 0; x < size; x += inc){
 			int y;
 			for(y = 0; y < size; y += inc){
-				heightmap[start+y][start+x] = (heightmap[y][x] + heightmap[y][(x+inc)%size] + heightmap[(y+inc)%size][x] + heightmap[(y+inc)%size][(x+inc)%size])/4.0 + rand_float()*(GLfloat)inc*displace;
+				heightmap[(start+y)*size+start+x] = (heightmap[y*size+x] + heightmap[y*size+(x+inc)%size] + heightmap[((y+inc)%size)*size+x] + heightmap[((y+inc)%size)*size+(x+inc)%size])/4.0 + rand_float()*(GLfloat)inc*displace;
 			}
 		}
 		// diamonds to squares
 		for(x = start; x < size; x += inc){
 			int y;
 			for(y = 0; y < size; y += inc){
-				heightmap[y][x] = (heightmap[(y+inc/2)%size][x] + heightmap[y][(x+inc/2)%size] + heightmap[(size+y-inc/2)%size][x] + heightmap[y][(size+x-inc/2)%size])/4.0 + rand_float()*(GLfloat)inc*displace;
+				heightmap[y*size+x] = (heightmap[((y+inc/2)%size)*size+x] + heightmap[y*size+(x+inc/2)%size] + heightmap[((size+y-inc/2)%size)*size+x] + heightmap[y*size+(size+x-inc/2)%size])/4.0 + rand_float()*(GLfloat)inc*displace;
 			}
 		}
 		for(x = 0; x < size; x += inc){
 			int y;
 			for(y = start; y < size; y += inc){
-				heightmap[y][x] = (heightmap[(y+inc/2)%size][x] + heightmap[y][(x+inc/2)%size] + heightmap[(size+y-inc/2)%size][x] + heightmap[y][(size+x-inc/2)%size])/4.0 + rand_float()*(GLfloat)inc*displace;
+				heightmap[y*size+x] = (heightmap[((y+inc/2)%size)*size+x] + heightmap[y*size+(x+inc/2)%size] + heightmap[((size+y-inc/2)%size)*size+x] + heightmap[y*size+(size+x-inc/2)%size])/4.0 + rand_float()*(GLfloat)inc*displace;
 			}
 		}
 	}
 	return heightmap;
 }
 
-void draw_heightmap_vector(GLfloat **heightmap, int w, int h){
+void draw_heightmap_vector(GLfloat *heightmap, int w, int h){
 	int x;
 	glColor3f(0,.1,0); // solid first
 	glEnable(GL_POLYGON_OFFSET_FILL);
@@ -82,10 +81,10 @@ void draw_heightmap_vector(GLfloat **heightmap, int w, int h){
 	for(x = 0; x < w; x++){
 		int y;
 		for(y = 0; y < h; y++){
-			glVertex3f((GLfloat)x,heightmap[y%h][x%w],(GLfloat)y);
-			glVertex3f((GLfloat)x,heightmap[(y+1)%h][x%w],(GLfloat)(y+1));
-			glVertex3f((GLfloat)(x+1),heightmap[(y+1)%h][(x+1)%w],(GLfloat)(y+1));
-			glVertex3f((GLfloat)(x+1),heightmap[y%h][(x+1)%w],(GLfloat)y);
+			glVertex3f((GLfloat)x,heightmap[(y%h)*w+x%w],(GLfloat)y);
+			glVertex3f((GLfloat)x,heightmap[((y+1)%h)*w+x%w],(GLfloat)(y+1));
+			glVertex3f((GLfloat)(x+1),heightmap[((y+1)%h)*w+(x+1)%w],(GLfloat)(y+1));
+			glVertex3f((GLfloat)(x+1),heightmap[(y%h)*w+(x+1)%w],(GLfloat)y);
 		}
 	}
 	glEnd();
@@ -95,18 +94,18 @@ void draw_heightmap_vector(GLfloat **heightmap, int w, int h){
 	for(x = 0; x < w; x++){
 		int y;
 		for(y = 0; y < h; y++){
-			glVertex3f((GLfloat)x,heightmap[y%h][x%w],(GLfloat)y);
-			glVertex3f((GLfloat)(x+1),heightmap[y%h][(x+1)%w],(GLfloat)y);
+			glVertex3f((GLfloat)x,heightmap[(y%h)*w+x%w],(GLfloat)y);
+			glVertex3f((GLfloat)(x+1),heightmap[(y%h)*w+(x+1)%w],(GLfloat)y);
 
-			glVertex3f((GLfloat)x,heightmap[y%h][x%w],(GLfloat)y);
-			glVertex3f((GLfloat)x,heightmap[(y+1)%h][x%w],(GLfloat)(y+1));
+			glVertex3f((GLfloat)x,heightmap[(y%h)*w+x%w],(GLfloat)y);
+			glVertex3f((GLfloat)x,heightmap[((y+1)%h)*w+x%w],(GLfloat)(y+1));
 		}
 	}
 	glEnd();
 	glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
-inline void terrain_color(GLfloat **heightmap, int x, int y){
+inline void terrain_color(GLfloat **heightmap, int x, int y){//CHANGE ME TO SINGLE DIM ARR
 	return;
 	if(heightmap[y][x] < 1){
 		glColor3f(0,0,.3+sqrt(-1/(heightmap[y][x]-2))*.7);
@@ -121,7 +120,7 @@ inline void terrain_color(GLfloat **heightmap, int x, int y){
 	}
 }
 
-inline GLuint terrain_texture(GLfloat **heightmap, int x, int y, GLuint textures[TEXTURE_COUNT]){
+inline GLuint terrain_texture(GLfloat **heightmap, int x, int y, GLuint textures[TEXTURE_COUNT]){//CHANGE ME TO SINGLE DIM ARR
 	if(heightmap[y][x] < 1){
 		return textures[TEXTURE_SAND];
 	} else if(heightmap[y][x] < 3){
@@ -135,7 +134,7 @@ inline GLuint terrain_texture(GLfloat **heightmap, int x, int y, GLuint textures
 	}
 }
 
-void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint textures[TEXTURE_COUNT], int w, int h){
+void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint textures[TEXTURE_COUNT], int w, int h){
 	glColor3f(1,1,1);
 
 	glActiveTexture(GL_TEXTURE0);
@@ -144,19 +143,35 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint te
 
 	glActiveTexture(GL_TEXTURE1);
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ROCK_ALPHA]);
+
+	glActiveTexture(GL_TEXTURE2);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SAND]);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE1);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE3);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE2);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE0);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA);
 
-	glActiveTexture(GL_TEXTURE2);
+	glActiveTexture(GL_TEXTURE3);
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SAND]);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE4);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PREVIOUS);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE1);
+	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA);
+
+	glActiveTexture(GL_TEXTURE4);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ROCK]);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS);
@@ -172,28 +187,36 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint te
 			GLfloat fx = (GLfloat)(x)/32.0;
 
 			glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)32,(GLfloat)y/(GLfloat)32);
-			glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)x/(GLfloat)32,(GLfloat)y/(GLfloat)32);
-			glNormal3fv(normalmap[y%h][x%w]);
-			glVertex3f((GLfloat)x,((heightmap[y%h][x%w]<1)?1:heightmap[y%h][x%w]),(GLfloat)y);
+			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE2,fx,fy);
+			glMultiTexCoord2f(GL_TEXTURE3,fx,fy);
+			glMultiTexCoord2f(GL_TEXTURE4,fx,fy);
+			glNormal3fv(normalmap[(y%h)*w+x%w]);
+			glVertex3f((GLfloat)x,((heightmap[(y%h)*w+x%w]<1)?1:heightmap[(y%h)*w+x%w]),(GLfloat)y);
 
 			glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)32,(GLfloat)(y+1)/(GLfloat)32);
-			glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)x/(GLfloat)32,(GLfloat)(y+1)/(GLfloat)32);
-			glNormal3fv(normalmap[(y+1)%h][x%w]);
-			glVertex3f((GLfloat)x,((heightmap[(y+1)%h][x%w]<1)?1:heightmap[(y+1)%h][x%w]),(GLfloat)(y+1));
+			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE2,fx,fy1);
+			glMultiTexCoord2f(GL_TEXTURE3,fx,fy1);
+			glMultiTexCoord2f(GL_TEXTURE4,fx,fy1);
+			glNormal3fv(normalmap[((y+1)%h)*w+x%w]);
+			glVertex3f((GLfloat)x,((heightmap[((y+1)%h)*w+x%w]<1)?1:heightmap[((y+1)%h)*w+x%w]),(GLfloat)(y+1));
 		}
 		glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)w/(GLfloat)32,(GLfloat)(y+1)/(GLfloat)32);
-		glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)w/(GLfloat)32,(GLfloat)(y+1)/(GLfloat)32);
-		glNormal3fv(normalmap[(y+1)%h][0]);
-		glVertex3f((GLfloat)w,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
+		glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)w/(GLfloat)32,fy1);
+		glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)w/(GLfloat)32,fy1);
+		glMultiTexCoord2f(GL_TEXTURE4,(GLfloat)w/(GLfloat)32,fy1);
+		glNormal3fv(normalmap[(y+1)%h+0]);
+		glVertex3f((GLfloat)w,((heightmap[((y+1)%h)*w+0]<1)?1:heightmap[((y+1)%h)*w+0]),(GLfloat)(y+1));
 
 		glMultiTexCoord2f(GL_TEXTURE0,0,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE1,0,(GLfloat)(y+1)/(GLfloat)32);
-		glMultiTexCoord2f(GL_TEXTURE2,0,(GLfloat)(y+1)/(GLfloat)32);
-		glNormal3fv(normalmap[(y+1)%h][0]);
-		glVertex3f((GLfloat)0,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
+		glMultiTexCoord2f(GL_TEXTURE1,0,(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE2,0,fy1);
+		glMultiTexCoord2f(GL_TEXTURE3,0,fy1);
+		glMultiTexCoord2f(GL_TEXTURE4,0,fy1);
+		glNormal3fv(normalmap[((y+1)%h)*w+0]);
+		glVertex3f((GLfloat)0,((heightmap[((y+1)%h)*w+0]<1)?1:heightmap[((y+1)%h)*w+0]),(GLfloat)(y+1));
 	}
 	glEnd();
 
@@ -210,36 +233,35 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint te
 	glDisable(GL_TEXTURE_2D);
 }
 
-GLfloat ***make_normalmap(GLfloat **heightmap, int w, int h){
-	GLfloat ***normalmap = new GLfloat**[h];
+GLfloat **make_normalmap(GLfloat *heightmap, int w, int h){
+	GLfloat **normalmap = new GLfloat*[w*h];
 	int y;
 	for(y = 0; y < h; y++){
-		normalmap[y] = new GLfloat*[w];
 		int x;
 		for(x = 0; x < w; x++){
-			normalmap[y][x] = new GLfloat[3];
+			normalmap[y*w+x] = new GLfloat[3];
 			GLfloat i,j,k;
-			i = -(heightmap[y][(x+1)%w]-heightmap[y][x]);
+			i = -(heightmap[y*w+(x+1)%w]-heightmap[y*w+x]);
 			j = 1;
-			k = -(heightmap[(y+1)%h][x]-heightmap[y][x]);
+			k = -(heightmap[((y+1)%h)*w+x]-heightmap[y*w+x]);
 			GLfloat m = sqrt(i*i + j*j + k*k);
-			normalmap[y][x][0] = i/m;
-			normalmap[y][x][1] = j/m;
-			normalmap[y][x][2] = k/m;
+			normalmap[y*w+x][0] = i/m;
+			normalmap[y*w+x][1] = j/m;
+			normalmap[y*w+x][2] = k/m;
 		}
 	}
 	return normalmap;
 }
 
-void oceanify(GLfloat **heightmap, int w, int h, GLfloat min){
+void oceanify(GLfloat *heightmap, int w, int h, GLfloat min){
 	int x;
 	bool doShift = false;
 	for(x = 0; x < w; x++){
 		int y;
 		for(y = 0; y < h; y++){
-			if(heightmap[y][x] < 0){
+			if(heightmap[y*w+x] < 0){
 				doShift = true;
-				heightmap[y][x] = (-1.0)/(heightmap[y][x]-1) - 1;
+				heightmap[y*w+x] = (-1.0)/(heightmap[y*w+x]-1) - 1;
 			}
 		}
 	}
@@ -247,76 +269,76 @@ void oceanify(GLfloat **heightmap, int w, int h, GLfloat min){
 		for(x = 0; x < w; x++){
 			int y;
 			for(y = 0; y < h; y++){
-				heightmap[y][x] += 1;
+				heightmap[y*w+x] += 1;
 			}
 		}
 	}
 }
 
-void hillify(GLfloat **heightmap, int w, int h, GLfloat flatness){
+void hillify(GLfloat *heightmap, int w, int h, GLfloat flatness){
 	oceanify(heightmap, w, h, 0.1); // no negatives, yo!
 	int x;
 	for(x = 0; x < w; x++){
 		int y;
 		for(y = 0; y < h; y++){
-			heightmap[y][x] = (GLfloat)pow((GLfloat)heightmap[y][x],(GLfloat)flatness);
+			heightmap[y*w+x] = (GLfloat)pow((GLfloat)heightmap[y*w+x],(GLfloat)flatness);
 		}
 	}
 }
 
-void smoothify(GLfloat **heightmap, int w, int h, GLfloat inertia){
+void smoothify(GLfloat *heightmap, int w, int h, GLfloat inertia){
 	if(inertia > 1) inertia = 1;
 	if(inertia < 0) inertia = 0;
 	int x;
 	for(x = 0; x < w; x++){
 		int y;
 		for(y = 0; y < h; y++){
-			heightmap[y][x] = (heightmap[y][x]*inertia + (1-inertia)*(heightmap[(h+y-1)%h][x] + heightmap[y][(w+x-1)%w] + heightmap[(y+1)%h][x] + heightmap[y][(x+1)%w])/4.0);
+			heightmap[y*w+x] = (heightmap[y*w+x]*inertia + (1-inertia)*(heightmap[((h+y-1)%h)*w+x] + heightmap[y*w+(w+x-1)%w] + heightmap[((y+1)%h)*w+x] + heightmap[y*w+(x+1)%w])/4.0);
 		}
 	}
 }
 
-GLfloat **normalize(GLfloat **heightmap, int w, int h, GLfloat depth){
+GLfloat *normalize(GLfloat *heightmap, int w, int h, GLfloat depth){
 	GLfloat min, max;
-	min = max = heightmap[0][0];
+	min = max = heightmap[0];
 	for(int y = 0; y < h; y++){
 		for(int x = 0; x < w; x++){
-			if(heightmap[y][x] < min){
-				min = heightmap[y][x];
-			} else if(heightmap[y][x] > max){
-				max = heightmap[y][x];
+			if(heightmap[y*w+x] < min){
+				min = heightmap[y*w+x];
+			} else if(heightmap[y*w+x] > max){
+				max = heightmap[y*w+x];
 			}
 		}
 	}
-	GLfloat **normalized = create_heightmap(w,h);
+	GLfloat *normalized = create_heightmap(w,h);
 	for(int y = 0; y < h; y++){
 		for(int x = 0; x < w; x++){
-			normalized[y][x] = depth * (heightmap[y][x] - min) / (max - min);
+			normalized[y*w+x] = depth * (heightmap[y*w+x] - min) / (max - min);
 		}
 	}
 	return normalized;
 }
 
-void out_to_file(GLfloat **heightmap, int w, int h, string file){
+void out_to_file(GLfloat *heightmap, int w, int h, string file){
 	if(w > 0 && h > 0){
 		ofstream of(file.c_str());
 		of << "P2 " << w << " " << h << " 255\n";
 		int y,x;
-		GLfloat max = heightmap[0][0];
+		GLfloat max = heightmap[0];
 		GLfloat min = max;
 		for(y = 0; y < h; y++){
 			for(x = 0; x < w; x++){
-				if(heightmap[y][x] > max){
-					max = heightmap[y][x];
+				if(heightmap[y*w+x] > max){
+					max = heightmap[y*w+x];
 				}
-				if(heightmap[y][x] < min){
-					min = heightmap[y][x];
+				if(heightmap[y*w+x] < min){
+					min = heightmap[y*w+x];
 				}
 			}
 		}
 		for(y = 0; y < h; y++){
 			for(x = 0; x < w; x++){
-				of << (int)(255*(heightmap[y][x]-min)/(max-min)) << " ";
+				of << (int)(255*(heightmap[y*w+x]-min)/(max-min)) << " ";
 			}
 			of << "\n";
 		}

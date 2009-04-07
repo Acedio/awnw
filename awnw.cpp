@@ -2,8 +2,7 @@
 // By Josh Simmons 2009
 
 //TODO: Fix normal map creation to set vertex normals equal to the mean of the six surrounding surface normals. http://www.gamedev.net/reference/programming/features/normalheightfield/
-//TODO: Convert terramap.cpp to work with single dim arrays
-//TODO: Add more procedural textures (water and mountains)
+//TODO: Add more procedural textures (water)
 
 #ifdef _WIN32
 #include <windows.h>
@@ -42,14 +41,17 @@ bool day = true;
 bool fog = true;
 bool light = true;
 bool flat = false;
-GLfloat fog_amount = .006;
-GLfloat **current_heightmap;
-GLfloat ***current_normalmap;
+GLfloat fog_amount = .004;
+
+GLfloat *current_heightmap;
+GLfloat **current_normalmap;
 
 GLfloat cloud_move_x = 0;
 GLfloat cloud_move_y = 0;
-GLfloat cloud_move_speed = .0005;
+GLfloat cloud_move_speed = .0002;
 GLfloat cloud_move_angle = 1;
+
+GLfloat water_t = 0;
 
 GLfloat x_off = 0, y_off = -50, z_off = -20, h_angle = 0, v_angle = 45;
 
@@ -83,37 +85,11 @@ void make_textures(){
 	textures[TEXTURE_GRASS] = make_grass_texture();
 	textures[TEXTURE_ROCK] = make_rock_texture();
 
-	GLfloat *perlin = perlin_noise(power,power,.5,1,power-1);
-	cloudify(perlin, size, size, .25, .01);
-	GLuint texture;
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-
-	glGenTextures(1,&texture);
-	glBindTexture(GL_TEXTURE_2D,texture);
-
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_ALPHA,size,size,GL_ALPHA,GL_FLOAT,perlin);
-
-	delete[] perlin;
-
-	textures[TEXTURE_GRASS_ALPHA] = texture;
-
-	glEnable(GL_TEXTURE_2D);
+	textures[TEXTURE_GRASS_ALPHA] = range_fade(current_heightmap, size, size, .2*15, .5*15, 1*15, 1.1*15);
+	textures[TEXTURE_ROCK_ALPHA] = range_fade(current_heightmap, size, size, .8*15, .9*15, 1*15, 1.1*15);
 }
 
 void draw_terrain(){
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	// Transforms for camera view
-	glLoadIdentity();
-	glRotatef(h_angle,0,1,0);
-	glRotatef(v_angle,cos(PI*h_angle/180.0),0,sin(PI*h_angle/180.0));
-	glTranslatef(x_off-size/2,y_off,z_off-size);
 	glTranslatef(size/2,0,size/2); // Translate so we're rotating around the center of the land
 	glRotatef(spin,0,1,0); // Yoshi's Island spin!
 	glTranslatef(-size/2,0,-size/2); // Translate back
@@ -125,9 +101,13 @@ void draw_terrain(){
 	} else {
 		draw_heightmap_vector(current_heightmap,size,size);
 	}
-	glTranslatef(size/2,0,size/2); // Translate to center so the clouds are drawn around the center
+	glTranslatef(size/2,0,size/2);
 	glRotatef(-spin,0,1,0); // Spin back so the clouds don't rotate with the land
+	glTranslatef(-size/2,0,-size/2);
+}
 
+void draw_clouds(){
+	glTranslatef(size/2,0,size/2); // Translate to center so the clouds are drawn around the center
 	// draw cloud spehere
 
 	glEnable(GL_TEXTURE_2D);
@@ -174,6 +154,68 @@ void draw_terrain(){
 		glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
 		glEnable(GL_LIGHT0);
 	}
+	glTranslatef(-size/2,0,-size/2);
+}
+
+void draw_water(GLfloat water_level, GLfloat ripple, GLfloat t){
+	glTranslatef(size/2,0,size/2); // Translate so we're rotating around the center of the land
+	glRotatef(spin,0,1,0); // Yoshi's Island spin!
+	glTranslatef(-size/2,0,-size/2); // Translate back
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	int water_res = 4;
+	glBegin(GL_QUADS);
+	glColor4f(0,.4,.7, .7);
+	int z_start, z_end, z_dir, x_start, x_end, x_dir;
+	if(cos(PI*h_angle/180.0) < 0){
+		z_start = 0;
+		z_end = size;
+		z_dir = 1;
+	} else {
+		z_start = size-water_res;
+		z_end = -water_res;
+		z_dir = -1;
+	}
+	if(sin(PI*h_angle/180.0) > 0){
+		x_start = 0;
+		x_end = size;
+		x_dir = 1;
+	} else {
+		x_start = size-water_res;
+		x_end = -water_res;
+		x_dir = -1;
+	}
+	for(int z = z_start; z_dir*z < z_dir*z_end; z += z_dir*water_res){
+		for(int x = x_start; x_dir*x < x_dir*x_end; x += x_dir*water_res){
+			glVertex3f(x,ripple*cos((GLfloat)x+t*3)+ripple*sin((GLfloat)z+t*2)+water_level,z);
+			glVertex3f(x,ripple*cos((GLfloat)x+t*3)+ripple*sin((GLfloat)(z+water_res)+t*2)+water_level,z+water_res);
+			glVertex3f(x+water_res,ripple*cos((GLfloat)(x+water_res)+t*3)+ripple*sin((GLfloat)(z+water_res)+t*2)+water_level,z+water_res);
+			glVertex3f(x+water_res,ripple*cos((GLfloat)(x+water_res)+t*3)+ripple*sin((GLfloat)z+t*2)+water_level,z);
+		}
+	}
+	glEnd();
+	glDisable(GL_BLEND);
+	glEnable(GL_TEXTURE_2D);
+}
+
+void draw_scene(GLfloat light_pos[4]){
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glLoadIdentity();
+
+	// Transforms for camera view
+	glRotatef(h_angle,0,1,0);
+	glRotatef(v_angle,cos(PI*h_angle/180.0),0,sin(PI*h_angle/180.0));
+	glTranslatef(x_off-size/2,y_off,z_off-size);
+	glTranslatef(size/2,0,size/2);
+	glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
+	glTranslatef(-size/2,0,-size/2);
+
+	// Draw our stuff!
+	draw_terrain();
+	draw_clouds();
+	draw_water(.35*15,.2,water_t);
+	water_t += .005;
 }
 
 void resize(int w, int h)
@@ -181,7 +223,7 @@ void resize(int w, int h)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glViewport(0, 0, w, h);
-	gluPerspective(45.0f,1.0f*w/h,1.0f,650.0f);
+	gluPerspective(45.0f,1.0f*w/h,1.0f,850.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -225,10 +267,16 @@ void keyboard(Uint8 *keys){
 		v_angle += 3*speed;
 	}
 	if(keys[SDLK_z]){
-		current_heightmap = make_terramap(power,.25);
+		current_heightmap = perlin_noise(power,power,.5,0,power-1);
 		current_heightmap = normalize(current_heightmap, size, size, 15);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 		make_textures();
+		glDeleteLists(terrain_dl,1);
+		terrain_dl = glGenLists(1);
+		
+		glNewList(terrain_dl,GL_COMPILE);
+		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
+		glEndList();
 	}
 	if(keys[SDLK_o]){
 		oceanify(current_heightmap, size, size, 0.1);
@@ -237,14 +285,32 @@ void keyboard(Uint8 *keys){
 	if(keys[SDLK_h]){
 		hillify(current_heightmap, size, size, hill_factor);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
+		glDeleteLists(terrain_dl,1);
+		terrain_dl = glGenLists(1);
+		
+		glNewList(terrain_dl,GL_COMPILE);
+		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
+		glEndList();
 	}
 	if(keys[SDLK_y]){
 		hillify(current_heightmap, size, size, 1.0/hill_factor);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
+		glDeleteLists(terrain_dl,1);
+		terrain_dl = glGenLists(1);
+		
+		glNewList(terrain_dl,GL_COMPILE);
+		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
+		glEndList();
 	}
 	if(keys[SDLK_g]){
 		smoothify(current_heightmap, size, size, .9);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
+		glDeleteLists(terrain_dl,1);
+		terrain_dl = glGenLists(1);
+		
+		glNewList(terrain_dl,GL_COMPILE);
+		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
+		glEndList();
 	}
 	if(keys[SDLK_u]){
 		spinning = !spinning;
@@ -263,7 +329,6 @@ void keyboard(Uint8 *keys){
 	}
 	if(keys[SDLK_t]){
 		textured = !textured;
-		current_normalmap = make_normalmap(current_heightmap,size,size);
 	}
 	if(keys[SDLK_c]){
 		light = !light;
@@ -318,12 +383,15 @@ void keyboard(Uint8 *keys){
 		if(keys[key]){
 			power = key - SDLK_0;
 			size = (int)pow((GLfloat)2,power);
-			current_heightmap = make_terramap(power,.25);
-			//current_heightmap = normalize(current_heightmap, size, size, 15);
-			if(textured){
-				//oceanify(current_heightmap, size, size, 0.1);
-			}
+			current_heightmap = perlin_noise(power,power,.5,0,power-1);
+			current_heightmap = normalize(current_heightmap, size, size, 15);
 			current_normalmap = make_normalmap(current_heightmap,size,size);
+			glDeleteLists(terrain_dl,1);
+			terrain_dl = glGenLists(1);
+			
+			glNewList(terrain_dl,GL_COMPILE);
+			draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
+			glEndList();
 		}
 	}
 }
@@ -342,12 +410,9 @@ GLfloat **d1_to_d2(GLfloat *one, int w, int h){
 int main(int argc, char **argv){
 	srand(time(0));
 	size = (int)pow((GLfloat)2,power);
-	//current_heightmap = make_terramap(power,.25);
-	GLfloat *perlin = perlin_noise(power,power,.5,1,power-1);
-	current_heightmap = d1_to_d2(perlin, size, size);
-	delete[] perlin;
+	//current_heightmap = make_terramap(power,.25); // Old way
+	current_heightmap = perlin_noise(power,power,.5,0,power-1);
 	current_heightmap = normalize(current_heightmap, size, size, 15);
-	//oceanify(current_heightmap, size, size, 0.1);
 	current_normalmap = make_normalmap(current_heightmap,size,size);
 
 	SDL_Surface *screen;
@@ -385,7 +450,7 @@ int main(int argc, char **argv){
 
 	resize(cur_screen_w, cur_screen_h);
 
-	GLfloat light_pos[] = {0,50,0,1.0};
+	GLfloat light_pos[4] = {0,50,0,1.0};
 
 	make_textures();
 
@@ -423,6 +488,7 @@ int main(int argc, char **argv){
 				}
 			}
 		}
+		// handle input
 		Uint8 *keys = SDL_GetKeyState(NULL);
 		if(keys[SDLK_ESCAPE]){
 			running = false;
@@ -446,8 +512,6 @@ int main(int argc, char **argv){
 			light_pos[1] -= 0.5;
 		}
 
-		glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
-
 		pressed = SDL_GetRelativeMouseState(&x, &y);
 
 		if(!(pressed&SDL_BUTTON(2))){
@@ -459,7 +523,7 @@ int main(int argc, char **argv){
 
 		keyboard(keys);
 
-		draw_terrain();
+		draw_scene(light_pos);
 
 		SDL_GL_SwapBuffers();
 		frames++;
@@ -484,15 +548,9 @@ int main(int argc, char **argv){
 	SDL_FreeSurface(screen);
 
 	SDL_Quit();
-	for(int i = 0; i < size; i++){
-		delete[] current_heightmap[i];
-	}
 	delete[] current_heightmap;
 
-	for(int i = 0; i < size; i++){
-		for(int j = 0; j < size; j++){
-			delete[] current_normalmap[i][j];
-		}
+	for(int i = 0; i < size*size; i++){
 		delete[] current_normalmap[i];
 	}
 	delete[] current_normalmap;

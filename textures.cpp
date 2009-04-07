@@ -210,3 +210,43 @@ GLuint make_rock_texture(){
 
 	return texture;
 }
+
+GLuint range_fade(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high){
+	GLfloat *fademap = new GLfloat[w*h];
+	for(int y = 0; y < h; y++){
+		for(int x = 0; x < w; x++){
+			GLfloat height = heightmap[y*w+x];
+			if(height < fadein_low){
+				fademap[y*w+x] = 0;
+			} else if(height < fadein_high){
+				fademap[y*w+x] = (height - fadein_low)/(fadein_high - fadein_low);
+			} else if(height < fadeout_low){
+				fademap[y*w+x] = 1;
+			} else if(height < fadeout_high){
+				fademap[y*w+x] = 1 - (height - fadeout_low)/(fadeout_high-fadeout_low);
+			} else {
+				fademap[y*w+x] = 0;
+			}
+		}
+	}
+	to_file(fademap,w,h,"lol.pgm");
+
+	GLuint texture;
+	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+
+	glGenTextures(1,&texture);
+	glBindTexture(GL_TEXTURE_2D,texture);
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_ALPHA,w,h,GL_ALPHA,GL_FLOAT,fademap);
+
+	delete[] fademap;
+
+	return texture;
+}

@@ -13,6 +13,8 @@ GLuint make_grass_texture();
 GLuint make_sand_texture();
 GLuint make_rock_texture();
 
+GLuint range_fade(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high);
+
 void cloudify(GLfloat *map, int w, int h, GLfloat cover, GLfloat sharpness);
 
 const int TEXTURE_NONE = 0;
