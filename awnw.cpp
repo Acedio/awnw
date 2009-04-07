@@ -1,4 +1,4 @@
-// RANDOM TERRAMAP
+// A WHOLE NEW WORLD
 // By Josh Simmons 2009
 
 //TODO: Fix normal map creation to set vertex normals equal to the mean of the six surrounding surface normals. http://www.gamedev.net/reference/programming/features/normalheightfield/
@@ -8,6 +8,7 @@
 #include <windows.h>
 #endif
 
+#include <GL/glew.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL/SDL.h>
@@ -27,7 +28,7 @@ const int SCREEN_W = 800;
 const int SCREEN_H = 600;
 const int SCREEN_BPP = 32;
 
-const float PI = 3.1415;
+const GLfloat PI = 3.1415;
 
 bool running = true;
 
@@ -430,6 +431,11 @@ int main(int argc, char **argv){
 
 	SDL_WM_SetCaption("Terrain!", NULL);
 
+	GLenum err = glewInit();
+	if(err != GLEW_OK){
+		cout << "Error: " << glewGetErrorString(err) << endl;
+	}
+
 	glEnable(GL_DEPTH_TEST); // for z buffering
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_TEXTURE_2D);
@@ -515,8 +521,8 @@ int main(int argc, char **argv){
 		pressed = SDL_GetRelativeMouseState(&x, &y);
 
 		if(!(pressed&SDL_BUTTON(2))){
-			h_angle += x;
-			v_angle += y;
+			h_angle += (GLfloat)x;
+			v_angle += (GLfloat)y;
 			if(v_angle < -90) v_angle = -90;
 			if(v_angle > 90) v_angle = 90;
 		}

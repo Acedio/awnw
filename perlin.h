@@ -5,6 +5,7 @@
 #include <windows.h>
 #endif
 
+#include <GL/glew.h>
 #include <GL/gl.h>
 
 GLfloat *create_noise_map(int w, int h);

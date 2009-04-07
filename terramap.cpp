@@ -2,6 +2,7 @@
 #include <windows.h>
 #endif
 
+#include <GL/glew.h>
 #include <GL/gl.h>
 
 #include <cstdlib>
@@ -180,7 +181,7 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	for(int y = 0; y <= h; y++){
+	for(int y = 0; y < h; y++){
 		GLfloat fy = (GLfloat)(y)/32.0;
 		GLfloat fy1 = (GLfloat)(1+y)/32.0;
 		for(int x = 0; x <= w; x++){
