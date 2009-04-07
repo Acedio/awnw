@@ -12,7 +12,7 @@ awnw.o: awnw.cpp terramap.h perlin.h textures.h
 perlin.o: perlin.cpp perlin.h
 	$(CC) $(CFLAGS) perlin.cpp
 
-terramap.o: terramap.cpp terramap.h
+terramap.o: terramap.cpp terramap.h textures.h
 	$(CC) $(CFLAGS) terramap.cpp
 
 textures.o: textures.cpp textures.h perlin.h map.h

@@ -117,7 +117,6 @@ GLuint make_grass_texture(){
 	delete[] green;
 	delete[] yellow;
 	delete[] blades;
-	//rgb_to_file(tex,size,size,"lol.ppm");
 
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -155,6 +154,41 @@ GLuint make_sand_texture(){
 	}
 	delete[] dirt;
 	delete[] sand;
+
+	GLuint texture;
+	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+
+	glGenTextures(1,&texture);
+	glBindTexture(GL_TEXTURE_2D,texture);
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGB,size,size,GL_RGB,GL_FLOAT,tex);
+
+	delete[] tex;
+
+	return texture;
+}
+
+GLuint make_rock_texture(){
+	int power = 8;
+	int size = pow((GLfloat)2,power);
+
+	GLfloat *rock = perlin_noise(power, power, .75, 2, power);
+	GLfloat *tex = new GLfloat[size*size*3];
+	for(int y = 0; y < size; y++){
+		for(int x = 0; x < size; x++){
+			tex[y*size*3+x*3+0] = .3+rock[y*size+x]*.7;
+			tex[y*size*3+x*3+1] = .3+rock[y*size+x]*.7;
+			tex[y*size*3+x*3+2] = .3+rock[y*size+x]*.6;
+		}
+	}
+	delete[] rock;
 	rgb_to_file(tex,size,size,"lol.ppm");
 
 	GLuint texture;

@@ -140,7 +140,7 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint te
 
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ALPHA]);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS_ALPHA]);
 
 	glActiveTexture(GL_TEXTURE1);
 	glEnable(GL_TEXTURE_2D);
@@ -165,33 +165,33 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint te
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
 
 	glBegin(GL_TRIANGLE_STRIP);
-	for(int y = 0; y < h; y++){
+	for(int y = 0; y <= h; y++){
 		GLfloat fy = (GLfloat)(y)/32.0;
 		GLfloat fy1 = (GLfloat)(1+y)/32.0;
 		for(int x = 0; x <= w; x++){
 			GLfloat fx = (GLfloat)(x)/32.0;
 
 			glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)32,(GLfloat)y/(GLfloat)32);
+			glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)x/(GLfloat)32,(GLfloat)y/(GLfloat)32);
 			glNormal3fv(normalmap[y%h][x%w]);
 			glVertex3f((GLfloat)x,((heightmap[y%h][x%w]<1)?1:heightmap[y%h][x%w]),(GLfloat)y);
 
 			glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)32,(GLfloat)(y+1)/(GLfloat)32);
+			glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)x/(GLfloat)32,(GLfloat)(y+1)/(GLfloat)32);
 			glNormal3fv(normalmap[(y+1)%h][x%w]);
 			glVertex3f((GLfloat)x,((heightmap[(y+1)%h][x%w]<1)?1:heightmap[(y+1)%h][x%w]),(GLfloat)(y+1));
 		}
-		glMultiTexCoord2f(GL_TEXTURE0,((GLfloat)1),(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE1,((GLfloat)1),(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE2,((GLfloat)1),(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)w/(GLfloat)32,(GLfloat)(y+1)/(GLfloat)32);
+		glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)w/(GLfloat)32,(GLfloat)(y+1)/(GLfloat)32);
 		glNormal3fv(normalmap[(y+1)%h][0]);
 		glVertex3f((GLfloat)w,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
 
 		glMultiTexCoord2f(GL_TEXTURE0,0,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE1,0,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE2,0,(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE1,0,(GLfloat)(y+1)/(GLfloat)32);
+		glMultiTexCoord2f(GL_TEXTURE2,0,(GLfloat)(y+1)/(GLfloat)32);
 		glNormal3fv(normalmap[(y+1)%h][0]);
 		glVertex3f((GLfloat)0,((heightmap[(y+1)%h][0]<1)?1:heightmap[(y+1)%h][0]),(GLfloat)(y+1));
 	}
@@ -209,27 +209,6 @@ void draw_heightmap_texture(GLfloat **heightmap, GLfloat ***normalmap, GLuint te
 	glBindTexture(GL_TEXTURE_2D, NULL);
 	glDisable(GL_TEXTURE_2D);
 }
-
-/*GLfloat ***make_normalmap(GLfloat **heightmap, int w, int h){
-	GLfloat ***normalmap = new GLfloat**[h];
-	int y;
-	for(y = 0; y < h; y++){
-		normalmap[y] = new GLfloat*[w];
-		int x;
-		for(x = 0; x < w; x++){
-			normalmap[y][x] = new GLfloat[3];
-			GLfloat i,j,k;
-			i = -(heightmap[y][(x+1)%w]-heightmap[y][x]);
-			j = 1;
-			k = -(heightmap[(y+1)%h][x]-heightmap[y][x]);
-			GLfloat m = sqrt(i*i + j*j + k*k);
-			normalmap[y][x][0] = i/m;
-			normalmap[y][x][1] = j/m;
-			normalmap[y][x][2] = k/m;
-		}
-	}
-	return normalmap;
-}*/
 
 GLfloat ***make_normalmap(GLfloat **heightmap, int w, int h){
 	GLfloat ***normalmap = new GLfloat**[h];

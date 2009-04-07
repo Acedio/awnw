@@ -2,6 +2,8 @@
 // By Josh Simmons 2009
 
 //TODO: Fix normal map creation to set vertex normals equal to the mean of the six surrounding surface normals. http://www.gamedev.net/reference/programming/features/normalheightfield/
+//TODO: Convert terramap.cpp to work with single dim arrays
+//TODO: Add more procedural textures (water and mountains)
 
 #ifdef _WIN32
 #include <windows.h>
@@ -63,26 +65,26 @@ void make_textures(){
 	if(glIsTexture(cloud_texture)){
 		glDeleteTextures(1,&cloud_texture);
 	}
-	textures[TEXTURE_DEFAULT] = 0;
-	if(glIsTexture(textures[TEXTURE_GRASS])){
-		glDeleteTextures(1,&textures[TEXTURE_GRASS]);
-	}
+	textures[TEXTURE_NONE] = 0;
 	if(glIsTexture(textures[TEXTURE_SAND])){
 		glDeleteTextures(1,&textures[TEXTURE_SAND]);
 	}
-	if(glIsTexture(textures[TEXTURE_ALPHA])){
-		glDeleteTextures(1,&textures[TEXTURE_ALPHA]);
+	if(glIsTexture(textures[TEXTURE_GRASS])){
+		glDeleteTextures(1,&textures[TEXTURE_GRASS]);
+	}
+	if(glIsTexture(textures[TEXTURE_GRASS_ALPHA])){
+		glDeleteTextures(1,&textures[TEXTURE_GRASS_ALPHA]);
+	}
+	if(glIsTexture(textures[TEXTURE_ROCK])){
+		glDeleteTextures(1,&textures[TEXTURE_ROCK]);
 	}
 	cloud_texture = make_cloud_texture();
 	textures[TEXTURE_SAND] = make_sand_texture();
 	textures[TEXTURE_GRASS] = make_grass_texture();
+	textures[TEXTURE_ROCK] = make_rock_texture();
 
 	GLfloat *perlin = perlin_noise(power,power,.5,1,power-1);
 	cloudify(perlin, size, size, .25, .01);
-	/*GLfloat *perlin = new GLfloat[size*size];
-	for(int i = 0; i < size*size; i++){
-		perlin[i] = (GLfloat)i/(GLfloat)(size*size);
-	}*/
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 
@@ -100,7 +102,7 @@ void make_textures(){
 
 	delete[] perlin;
 
-	textures[TEXTURE_ALPHA] = texture;
+	textures[TEXTURE_GRASS_ALPHA] = texture;
 
 	glEnable(GL_TEXTURE_2D);
 }
