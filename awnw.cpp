@@ -92,6 +92,9 @@ void make_textures(){
 	if(glIsTexture(terrain_textures[TEXTURE_ROCK])){
 		glDeleteTextures(1,&terrain_textures[TEXTURE_ROCK]);
 	}
+	if(glIsTexture(terrain_textures[TEXTURE_ROCK_ALPHA])){
+		glDeleteTextures(1,&terrain_textures[TEXTURE_ROCK_ALPHA]);
+	}
 	cloud_texture = make_cloud_texture();
 	tree_texture = make_tree_texture();
 	terrain_textures[TEXTURE_SAND] = make_sand_texture();
@@ -381,7 +384,7 @@ void keyboard(Uint8 *keys){
 			} else if(z_off > size - 1){
 				z_off = size - 1;
 			}
-			z_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)];
+			y_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)];
 		}
 	}
 	if(keys[SDLK_s]){
@@ -402,7 +405,7 @@ void keyboard(Uint8 *keys){
 			} else if(z_off > size - 1){
 				z_off = size - 1;
 			}
-			z_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)];
+			y_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)];
 		}
 	}
 	if(keys[SDLK_a]){
@@ -692,6 +695,7 @@ int main(int argc, char **argv){
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_TEXTURE_2D);
 	glDeleteTextures(1,&cloud_texture);
+	glDeleteTextures(1,&tree_texture);
 	glDeleteTextures(TEXTURE_COUNT,terrain_textures);
 
 	glDeleteLists(terrain_dl,1);
