@@ -70,32 +70,6 @@ GLuint make_cloud_texture(){
 	return texture;
 }
 
-GLuint make_ground_texture(){
-	int power = 8;
-	int size = pow((GLfloat)2,power);
-
-	GLfloat *tex = perlin_noise(power,power,0.75,2,power);
-
-	GLuint texture;
-	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-
-	glGenTextures(1,&texture);
-	glBindTexture(GL_TEXTURE_2D,texture);
-
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_LUMINANCE,size,size,GL_LUMINANCE,GL_FLOAT,tex);
-
-	delete[] tex;
-
-	return texture;
-}
-
 GLuint make_grass_texture(){
 	int power = 8;
 	int size = pow((GLfloat)2,power);
@@ -212,7 +186,64 @@ GLuint make_rock_texture(){
 	return texture;
 }
 
-GLuint range_fade(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high){
+GLuint make_tree_texture(){
+	int power = 8;
+	int size = pow((GLfloat)2,power);
+	GLfloat *tree_nostretch = new GLfloat[size*size/16];
+	for(int y = 0; y < size/4; y++){
+		for(int x = 0; x < size/4; x++){
+			GLfloat d = (GLfloat)(x-size/8)/(GLfloat)(size/4)*2;
+			tree_nostretch[y*size/4+x] = -1.7*pow(abs(d),1.3)+4*(GLfloat)y/(GLfloat)size;
+			if(tree_nostretch[y*size/4+x] < 0){
+				tree_nostretch[y*size/4+x] = 0;
+			} else if(tree_nostretch[y*size/4+x] > 1){
+				tree_nostretch[y*size/4+x] = 1;
+			}
+		}
+	}
+	to_file(tree_nostretch,size/4,size/4,"tree.pgm");
+	GLfloat *tree = smooth_stretch_map(tree_nostretch, size/4, size/4, 4, 4);
+	delete[] tree_nostretch;
+	GLfloat *foliage_nostretch = perlin_noise(power-2, power, .75, 1, power-2);
+	GLfloat *foliage = smooth_stretch_map(foliage_nostretch, size/4, size, 4, 1);
+	delete[] foliage_nostretch;
+	GLfloat *tex = new GLfloat[size*size*4];
+	for(int y = 0; y < size; y++){
+		for(int x = 0; x < size; x++){
+			tex[y*size*4+x*4+0] = .1+.1*(1-.8*tree[y*size+x])*foliage[y*size+x];
+			tex[y*size*4+x*4+1] = .2+.4*(1-.8*tree[y*size+x])*foliage[y*size+x];
+			tex[y*size*4+x*4+2] = .2*(1-.8*tree[y*size+x])*foliage[y*size+x];
+			if(tree[y*size+x] > 0){
+				tex[y*size*4+x*4+3] = 1; 
+			} else {
+				tex[y*size*4+x*4+3] = 0;
+			}
+		}
+	}
+	delete[] tree;
+	delete[] foliage;
+
+	GLuint texture;
+	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+
+	glGenTextures(1,&texture);
+	glBindTexture(GL_TEXTURE_2D,texture);
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	gluBuild2DMipmaps(GL_TEXTURE_2D,GL_RGBA,size,size,GL_RGBA,GL_FLOAT,tex);
+
+	delete[] tex;
+
+	return texture;
+}
+
+GLfloat *range_fade(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high){
 	GLfloat *fademap = new GLfloat[w*h];
 	for(int y = 0; y < h; y++){
 		for(int x = 0; x < w; x++){
@@ -230,7 +261,11 @@ GLuint range_fade(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat 
 			}
 		}
 	}
-	to_file(fademap,w,h,"lol.pgm");
+	return fademap;
+}
+
+GLuint range_fade_texture(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high){
+	GLfloat *fademap = range_fade(heightmap, w, h, fadein_low, fadein_high, fadeout_low, fadeout_high);
 
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);

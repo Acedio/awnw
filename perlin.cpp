@@ -14,6 +14,11 @@ using namespace std;
 
 #include "perlin.h"
 
+GLfloat noise(int x){
+	x = (x<<13) ^ x;
+	return (GLfloat)(((x * (x * x * 15731 + 789221) + 1376312589) & 0x7FFFFFFF) / 1073741824.0)/2.0;
+}
+
 inline GLfloat smoothstep(GLfloat x){
 	return x * x * (3 - 2 * x);
 }

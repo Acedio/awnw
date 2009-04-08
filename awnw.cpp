@@ -42,10 +42,11 @@ bool day = true;
 bool fog = true;
 bool light = true;
 bool flat = false;
+bool flying = false;
 GLfloat fog_amount = .004;
 
-GLfloat *current_heightmap;
-GLfloat **current_normalmap;
+GLfloat *current_heightmap = NULL;
+GLfloat **current_normalmap = NULL;
 
 GLfloat cloud_move_x = 0;
 GLfloat cloud_move_y = 0;
@@ -54,11 +55,18 @@ GLfloat cloud_move_angle = 1;
 
 GLfloat water_t = 0;
 
-GLfloat x_off = 0, y_off = -50, z_off = -20, h_angle = 0, v_angle = 45;
+GLfloat x_off = 0, y_off = 0, z_off = 0, h_angle = 0, v_angle = 45;
 
-GLuint textures[TEXTURE_COUNT];
+GLuint terrain_textures[TEXTURE_COUNT];
 
 GLuint cloud_texture;
+
+GLuint tree_texture;
+GLfloat *treemap = NULL;
+GLuint treemap_dl;
+int tree_seed;
+
+const int player_height = 3;
 
 GLuint terrain_dl;
 
@@ -68,32 +76,104 @@ void make_textures(){
 	if(glIsTexture(cloud_texture)){
 		glDeleteTextures(1,&cloud_texture);
 	}
-	textures[TEXTURE_NONE] = 0;
-	if(glIsTexture(textures[TEXTURE_SAND])){
-		glDeleteTextures(1,&textures[TEXTURE_SAND]);
+	if(glIsTexture(tree_texture)){
+		glDeleteTextures(1,&tree_texture);
 	}
-	if(glIsTexture(textures[TEXTURE_GRASS])){
-		glDeleteTextures(1,&textures[TEXTURE_GRASS]);
+	terrain_textures[TEXTURE_NONE] = 0;
+	if(glIsTexture(terrain_textures[TEXTURE_SAND])){
+		glDeleteTextures(1,&terrain_textures[TEXTURE_SAND]);
 	}
-	if(glIsTexture(textures[TEXTURE_GRASS_ALPHA])){
-		glDeleteTextures(1,&textures[TEXTURE_GRASS_ALPHA]);
+	if(glIsTexture(terrain_textures[TEXTURE_GRASS])){
+		glDeleteTextures(1,&terrain_textures[TEXTURE_GRASS]);
 	}
-	if(glIsTexture(textures[TEXTURE_ROCK])){
-		glDeleteTextures(1,&textures[TEXTURE_ROCK]);
+	if(glIsTexture(terrain_textures[TEXTURE_GRASS_ALPHA])){
+		glDeleteTextures(1,&terrain_textures[TEXTURE_GRASS_ALPHA]);
+	}
+	if(glIsTexture(terrain_textures[TEXTURE_ROCK])){
+		glDeleteTextures(1,&terrain_textures[TEXTURE_ROCK]);
 	}
 	cloud_texture = make_cloud_texture();
-	textures[TEXTURE_SAND] = make_sand_texture();
-	textures[TEXTURE_GRASS] = make_grass_texture();
-	textures[TEXTURE_ROCK] = make_rock_texture();
+	tree_texture = make_tree_texture();
+	terrain_textures[TEXTURE_SAND] = make_sand_texture();
+	terrain_textures[TEXTURE_GRASS] = make_grass_texture();
+	terrain_textures[TEXTURE_ROCK] = make_rock_texture();
 
-	textures[TEXTURE_GRASS_ALPHA] = range_fade(current_heightmap, size, size, .2*15, .5*15, 1*15, 1.1*15);
-	textures[TEXTURE_ROCK_ALPHA] = range_fade(current_heightmap, size, size, .8*15, .9*15, 1*15, 1.1*15);
+	terrain_textures[TEXTURE_GRASS_ALPHA] = range_fade_texture(current_heightmap, size, size, .2*15, .5*15, 1*15, 1.1*15);
+	terrain_textures[TEXTURE_ROCK_ALPHA] = range_fade_texture(current_heightmap, size, size, .8*15, .9*15, 1*15, 1.1*15);
+}
+
+void draw_forests(){
+	glColor3f(1,1,1);
+
+	glEnable(GL_TEXTURE_2D);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glBindTexture(GL_TEXTURE_2D, tree_texture);
+
+	glAlphaFunc(GL_GREATER, 0.7);
+	glEnable(GL_ALPHA_TEST);
+
+	glNormal3f(0,1,0);
+
+	glBegin(GL_QUADS);
+	for(int z = 0; z < size; z++){
+		for(int x = 0; x < size; x++){
+			if(treemap[z*size+x] > .9){
+				glTexCoord2f(0,1);
+				glVertex3f(x-.75,current_heightmap[z*size+x],z);
+				glTexCoord2f(0,0);
+				glVertex3f(x-.75,1+current_heightmap[z*size+x],z);
+				glTexCoord2f(1,0);
+				glVertex3f(x+.75,1+current_heightmap[z*size+x],z);
+				glTexCoord2f(1,1);
+				glVertex3f(x+.75,current_heightmap[z*size+x],z);
+
+				glTexCoord2f(0,1);
+				glVertex3f(x,current_heightmap[z*size+x],z-.75);
+				glTexCoord2f(0,0);
+				glVertex3f(x,1+current_heightmap[z*size+x],z-.75);
+				glTexCoord2f(1,0);
+				glVertex3f(x,1+current_heightmap[z*size+x],z+.75);
+				glTexCoord2f(1,1);
+				glVertex3f(x,current_heightmap[z*size+x],z+.75);
+			}
+		}
+	}
+	glEnd();
+
+	glDisable(GL_ALPHA_TEST);
+
+	glDisable(GL_TEXTURE_2D);
+
+	glDisable(GL_BLEND);
+}
+
+void make_treemap(int seed){
+	if(treemap != NULL){
+		delete[] treemap;
+	}
+	treemap = range_fade(current_heightmap, size, size, .4*15, .5*15, .8*15, .9*15);
+	for(int z = 0; z < size; z++){
+		treemap[z*size] = 0; // we don't want trees on the edge
+		for(int x = 1; x < size; x++){
+			if(z == 0){
+				treemap[z*size+x] = 0; // no edge trees
+			} else {
+				treemap[z*size+x] = noise(seed+z*size+x)*treemap[z*size+x];
+			}
+		}
+	}
+	glDeleteLists(treemap_dl,1);
+	treemap_dl = glGenLists(1);
+	
+	glNewList(treemap_dl,GL_COMPILE);
+	draw_forests();
+	glEndList();
 }
 
 void draw_terrain(){
-	glTranslatef(size/2,0,size/2); // Translate so we're rotating around the center of the land
-	glRotatef(spin,0,1,0); // Yoshi's Island spin!
-	glTranslatef(-size/2,0,-size/2); // Translate back
 	if(spinning){
 		spin += spin_speed;
 	}
@@ -102,14 +182,22 @@ void draw_terrain(){
 	} else {
 		draw_heightmap_vector(current_heightmap,size,size);
 	}
-	glTranslatef(size/2,0,size/2);
-	glRotatef(-spin,0,1,0); // Spin back so the clouds don't rotate with the land
-	glTranslatef(-size/2,0,-size/2);
+}
+
+void make_terrain(){
+	glDeleteLists(terrain_dl,1);
+	terrain_dl = glGenLists(1);
+	
+	glNewList(terrain_dl,GL_COMPILE);
+	draw_heightmap_texture(current_heightmap,current_normalmap,terrain_textures,size,size);
+	glEndList();
 }
 
 void draw_clouds(){
 	glTranslatef(size/2,0,size/2); // Translate to center so the clouds are drawn around the center
 	// draw cloud spehere
+	
+	glColor3f(1,1,1);
 
 	glEnable(GL_TEXTURE_2D);
 
@@ -147,6 +235,35 @@ void draw_clouds(){
 		cloud_move_y -= 1.0;
 	}
 
+	// Draw the rest of the skybox
+	glDisable(GL_TEXTURE_2D);
+	glBegin(GL_QUADS);
+		//back
+		glVertex3f(-max,radius-lower_by,-max);
+		glVertex3f(-max,-lower_by,-max);
+		glVertex3f(max,-lower_by,-max);
+		glVertex3f(max,radius-lower_by,-max);
+		
+		//left
+		glVertex3f(-max,radius-lower_by,max);
+		glVertex3f(-max,-lower_by,max);
+		glVertex3f(-max,-lower_by,-max);
+		glVertex3f(-max,radius-lower_by,-max);
+		
+		//front
+		glVertex3f(max,radius-lower_by,max);
+		glVertex3f(max,-lower_by,max);
+		glVertex3f(-max,-lower_by,max);
+		glVertex3f(-max,radius-lower_by,max);
+
+		//right
+		glVertex3f(max,radius-lower_by,-max);
+		glVertex3f(max,-lower_by,-max);
+		glVertex3f(max,-lower_by,max);
+		glVertex3f(max,radius-lower_by,max);
+	glEnd();
+	glEnable(GL_TEXTURE_2D);
+
 	if(light){
 		// Bring the light back for terrain drawing. We want lighting enabled during
 		// the keyboard routine so we can still change light properties (position, etc)
@@ -159,15 +276,17 @@ void draw_clouds(){
 }
 
 void draw_water(GLfloat water_level, GLfloat ripple, GLfloat t){
-	glTranslatef(size/2,0,size/2); // Translate so we're rotating around the center of the land
-	glRotatef(spin,0,1,0); // Yoshi's Island spin!
-	glTranslatef(-size/2,0,-size/2); // Translate back
+	glEnable(GL_LIGHTING);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
+	glEnable(GL_LIGHT0);
 	glDisable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	int water_res = 4;
 	glBegin(GL_QUADS);
-	glColor4f(0,.4,.7, .7);
+	glNormal3f(0,1,0);
+	glColor4f(0,.4,.7, .93);
 	int z_start, z_end, z_dir, x_start, x_end, x_dir;
 	if(cos(PI*h_angle/180.0) < 0){
 		z_start = 0;
@@ -197,13 +316,14 @@ void draw_water(GLfloat water_level, GLfloat ripple, GLfloat t){
 	}
 	glEnd();
 	glDisable(GL_BLEND);
+	glDisable(GL_LIGHTING);
 	glEnable(GL_TEXTURE_2D);
 }
 
 void draw_scene(GLfloat light_pos[4]){
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-
+	
 	// Transforms for camera view
 	glRotatef(h_angle,0,1,0);
 	glRotatef(v_angle,cos(PI*h_angle/180.0),0,sin(PI*h_angle/180.0));
@@ -213,9 +333,21 @@ void draw_scene(GLfloat light_pos[4]){
 	glTranslatef(-size/2,0,-size/2);
 
 	// Draw our stuff!
-	draw_terrain();
 	draw_clouds();
+
+	glTranslatef(size/2,0,size/2); // Translate so we're rotating around the center of the land
+	glRotatef(spin,0,1,0); // Yoshi's Island spin!
+	glTranslatef(-size/2,0,-size/2); // Translate back
+
+	draw_terrain();
+	glCallList(treemap_dl);
 	draw_water(.35*15,.2,water_t);
+
+	glTranslatef(0,0,-size);
+	glTranslatef(size/2,0,size/2); // Translate so we're rotating around the center of the land
+	glRotatef(-spin,0,1,0); // Yoshi's Island spin!
+	glTranslatef(-size/2,0,-size/2); // Translate back
+
 	water_t += .005;
 }
 
@@ -232,14 +364,46 @@ void resize(int w, int h)
 void keyboard(Uint8 *keys){
 	GLfloat speed = .5;
 	if(keys[SDLK_w]){
-		x_off -= cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
-		y_off += sin(PI*v_angle/180.0)*speed;
-		z_off += cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
+		if(flying){
+			x_off -= cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
+			z_off += cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
+			y_off += sin(PI*v_angle/180.0)*speed;
+		} else {
+			x_off -= cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
+			z_off += cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
+			if(x_off < 0){
+				x_off = 0;
+			} else if(x_off > size - 1){
+				x_off = size - 1;
+			}
+			if(z_off < 0){
+				z_off = 0;
+			} else if(z_off > size - 1){
+				z_off = size - 1;
+			}
+			z_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)];
+		}
 	}
 	if(keys[SDLK_s]){
-		x_off += cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
-		y_off -= sin(PI*v_angle/180.0)*speed;
-		z_off -= cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
+		if(flying){
+			x_off += cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
+			z_off -= cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
+			y_off -= sin(PI*v_angle/180.0)*speed;
+		} else {
+			x_off += cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
+			z_off -= cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
+			if(x_off < 0){
+				x_off = 0;
+			} else if(x_off > size - 1){
+				x_off = size - 1;
+			}
+			if(z_off < 0){
+				z_off = 0;
+			} else if(z_off > size - 1){
+				z_off = size - 1;
+			}
+			z_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)];
+		}
 	}
 	if(keys[SDLK_a]){
 		x_off += cos(PI*h_angle/180.0)*speed;
@@ -272,12 +436,8 @@ void keyboard(Uint8 *keys){
 		current_heightmap = normalize(current_heightmap, size, size, 15);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 		make_textures();
-		glDeleteLists(terrain_dl,1);
-		terrain_dl = glGenLists(1);
-		
-		glNewList(terrain_dl,GL_COMPILE);
-		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
-		glEndList();
+		make_terrain();
+		make_treemap(tree_seed);
 	}
 	if(keys[SDLK_o]){
 		oceanify(current_heightmap, size, size, 0.1);
@@ -286,32 +446,20 @@ void keyboard(Uint8 *keys){
 	if(keys[SDLK_h]){
 		hillify(current_heightmap, size, size, hill_factor);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
-		glDeleteLists(terrain_dl,1);
-		terrain_dl = glGenLists(1);
-		
-		glNewList(terrain_dl,GL_COMPILE);
-		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
-		glEndList();
+		make_terrain();
+		make_treemap(tree_seed);
 	}
 	if(keys[SDLK_y]){
 		hillify(current_heightmap, size, size, 1.0/hill_factor);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
-		glDeleteLists(terrain_dl,1);
-		terrain_dl = glGenLists(1);
-		
-		glNewList(terrain_dl,GL_COMPILE);
-		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
-		glEndList();
+		make_terrain();
+		make_treemap(tree_seed);
 	}
 	if(keys[SDLK_g]){
 		smoothify(current_heightmap, size, size, .9);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
-		glDeleteLists(terrain_dl,1);
-		terrain_dl = glGenLists(1);
-		
-		glNewList(terrain_dl,GL_COMPILE);
-		draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
-		glEndList();
+		make_terrain();
+		make_treemap(tree_seed);
 	}
 	if(keys[SDLK_u]){
 		spinning = !spinning;
@@ -379,6 +527,9 @@ void keyboard(Uint8 *keys){
 			glShadeModel(GL_SMOOTH);
 		}
 	}
+	if(keys[SDLK_n]){
+		flying = !flying;
+	}
 	Uint8 key;
 	for(key = SDLK_1; key <= SDLK_9; key++){
 		if(keys[key]){
@@ -387,12 +538,8 @@ void keyboard(Uint8 *keys){
 			current_heightmap = perlin_noise(power,power,.5,0,power-1);
 			current_heightmap = normalize(current_heightmap, size, size, 15);
 			current_normalmap = make_normalmap(current_heightmap,size,size);
-			glDeleteLists(terrain_dl,1);
-			terrain_dl = glGenLists(1);
-			
-			glNewList(terrain_dl,GL_COMPILE);
-			draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
-			glEndList();
+			make_terrain();
+			make_treemap(tree_seed);
 		}
 	}
 }
@@ -461,11 +608,12 @@ int main(int argc, char **argv){
 	make_textures();
 
 	terrain_dl = glGenLists(1);
-	
-	glNewList(terrain_dl,GL_COMPILE);
-	draw_heightmap_texture(current_heightmap,current_normalmap,textures,size,size);
-	glEndList();
 
+	make_terrain();
+	
+	tree_seed = rand();
+	make_treemap(tree_seed);
+	
 	SDL_WM_GrabInput(SDL_GRAB_ON);
 
 	SDL_ShowCursor(SDL_DISABLE);
@@ -544,21 +692,25 @@ int main(int argc, char **argv){
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_TEXTURE_2D);
 	glDeleteTextures(1,&cloud_texture);
-	glDeleteTextures(1,&textures[TEXTURE_GRASS]);
-	glDeleteTextures(1,&textures[TEXTURE_SAND]);
+	glDeleteTextures(TEXTURE_COUNT,terrain_textures);
 
 	glDeleteLists(terrain_dl,1);
+	
+	glDeleteLists(treemap_dl,1);
+
+	delete[] current_heightmap;
+
+	delete[] treemap;
+
+	for(int i = 0; i < size*size; i++){
+		delete[] current_normalmap[i];
+	}
+	delete[] current_normalmap;
 
 	SDL_WM_GrabInput(SDL_GRAB_OFF);
 
 	SDL_FreeSurface(screen);
 
 	SDL_Quit();
-	delete[] current_heightmap;
-
-	for(int i = 0; i < size*size; i++){
-		delete[] current_normalmap[i];
-	}
-	delete[] current_normalmap;
 	return 0;
 }

@@ -9,12 +9,13 @@
 #include <GL/gl.h>
 
 GLuint make_cloud_texture();
-GLuint make_ground_texture();
 GLuint make_grass_texture();
 GLuint make_sand_texture();
 GLuint make_rock_texture();
+GLuint make_tree_texture();
 
-GLuint range_fade(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high);
+GLfloat *range_fade(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high);
+GLuint range_fade_texture(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high);
 
 void cloudify(GLfloat *map, int w, int h, GLfloat cover, GLfloat sharpness);
 

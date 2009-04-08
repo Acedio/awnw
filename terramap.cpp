@@ -76,6 +76,7 @@ GLfloat *make_terramap(int power, GLfloat displace){
 void draw_heightmap_vector(GLfloat *heightmap, int w, int h){
 	int x;
 	glColor3f(0,.1,0); // solid first
+	glDisable(GL_LIGHTING);
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(2,2);
 	glBegin(GL_QUADS);
@@ -104,6 +105,7 @@ void draw_heightmap_vector(GLfloat *heightmap, int w, int h){
 	}
 	glEnd();
 	glDisable(GL_POLYGON_OFFSET_FILL);
+	glEnable(GL_LIGHTING);
 }
 
 inline void terrain_color(GLfloat **heightmap, int x, int y){//CHANGE ME TO SINGLE DIM ARR
@@ -137,6 +139,8 @@ inline GLuint terrain_texture(GLfloat **heightmap, int x, int y, GLuint textures
 
 void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint textures[TEXTURE_COUNT], int w, int h){
 	glColor3f(1,1,1);
+
+	glEnable(GL_LIGHTING);
 
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_TEXTURE_2D);
@@ -193,7 +197,8 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 			glMultiTexCoord2f(GL_TEXTURE3,fx,fy);
 			glMultiTexCoord2f(GL_TEXTURE4,fx,fy);
 			glNormal3fv(normalmap[(y%h)*w+x%w]);
-			glVertex3f((GLfloat)x,((heightmap[(y%h)*w+x%w]<1)?1:heightmap[(y%h)*w+x%w]),(GLfloat)y);
+			//glVertex3f((GLfloat)x,((heightmap[(y%h)*w+x%w]<1)?1:heightmap[(y%h)*w+x%w]),(GLfloat)y);
+			glVertex3f((GLfloat)x,heightmap[(y%h)*w+x%w],(GLfloat)y);
 
 			glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
 			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
@@ -201,7 +206,8 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 			glMultiTexCoord2f(GL_TEXTURE3,fx,fy1);
 			glMultiTexCoord2f(GL_TEXTURE4,fx,fy1);
 			glNormal3fv(normalmap[((y+1)%h)*w+x%w]);
-			glVertex3f((GLfloat)x,((heightmap[((y+1)%h)*w+x%w]<1)?1:heightmap[((y+1)%h)*w+x%w]),(GLfloat)(y+1));
+			//glVertex3f((GLfloat)x,((heightmap[((y+1)%h)*w+x%w]<1)?1:heightmap[((y+1)%h)*w+x%w]),(GLfloat)(y+1));
+			glVertex3f((GLfloat)x,heightmap[((y+1)%h)*w+x%w],(GLfloat)(y+1));
 		}
 		glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
 		glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
@@ -209,7 +215,8 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 		glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)w/(GLfloat)32,fy1);
 		glMultiTexCoord2f(GL_TEXTURE4,(GLfloat)w/(GLfloat)32,fy1);
 		glNormal3fv(normalmap[(y+1)%h+0]);
-		glVertex3f((GLfloat)w,((heightmap[((y+1)%h)*w+0]<1)?1:heightmap[((y+1)%h)*w+0]),(GLfloat)(y+1));
+		//glVertex3f((GLfloat)w,((heightmap[((y+1)%h)*w+0]<1)?1:heightmap[((y+1)%h)*w+0]),(GLfloat)(y+1));
+		glVertex3f((GLfloat)w,heightmap[((y+1)%h)*w+0],(GLfloat)(y+1));
 
 		glMultiTexCoord2f(GL_TEXTURE0,0,(GLfloat)(y+1)/(GLfloat)h);
 		glMultiTexCoord2f(GL_TEXTURE1,0,(GLfloat)(y+1)/(GLfloat)h);
@@ -217,7 +224,8 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 		glMultiTexCoord2f(GL_TEXTURE3,0,fy1);
 		glMultiTexCoord2f(GL_TEXTURE4,0,fy1);
 		glNormal3fv(normalmap[((y+1)%h)*w+0]);
-		glVertex3f((GLfloat)0,((heightmap[((y+1)%h)*w+0]<1)?1:heightmap[((y+1)%h)*w+0]),(GLfloat)(y+1));
+		//glVertex3f((GLfloat)0,((heightmap[((y+1)%h)*w+0]<1)?1:heightmap[((y+1)%h)*w+0]),(GLfloat)(y+1));
+		glVertex3f((GLfloat)0,heightmap[((y+1)%h)*w+0],(GLfloat)(y+1));
 	}
 	glEnd();
 
@@ -232,6 +240,8 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, NULL);
 	glDisable(GL_TEXTURE_2D);
+
+	glEnable(GL_LIGHTING);
 }
 
 GLfloat **make_normalmap(GLfloat *heightmap, int w, int h){

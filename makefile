@@ -4,7 +4,7 @@ CFLAGS=-c -Wall
 all: awnw
 
 awnw: awnw.o perlin.o terramap.o textures.o map.o
-	$(CC) awnw.o perlin.o terramap.o textures.o map.o -lSDL -lGLU -o awnw
+	$(CC) awnw.o perlin.o terramap.o textures.o map.o -lSDL -lGL -lGLU -lGLEW -o awnw
 
 awnw.o: awnw.cpp terramap.h perlin.h textures.h
 	$(CC) $(CFLAGS) awnw.cpp

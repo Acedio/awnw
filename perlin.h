@@ -15,4 +15,6 @@ GLfloat *smooth_stretch_map(GLfloat *map, int w, int h, int x_scale, int y_scale
 
 GLfloat *perlin_noise(int x_pow, int y_pow, GLfloat persistence, int start, int end);
 
+GLfloat noise(int x);
+
 #endif
