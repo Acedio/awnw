@@ -33,6 +33,8 @@ const GLfloat PI = 3.1415;
 bool running = true;
 
 int power=7, size;
+GLfloat max_terrain_height;
+const GLfloat max_height_div = 6.0;
 GLfloat hill_factor = .97;
 bool spinning = false;
 GLfloat spin = 0;
@@ -41,9 +43,12 @@ bool textured = true;
 bool day = true;
 bool fog = true;
 bool light = true;
+GLfloat light_pos[4] = {0,1,0,1.0};
 bool flat = false;
 bool flying = false;
+GLfloat speed = .2;
 GLfloat fog_amount = .005;
+GLfloat fog_decay = .47;
 
 GLfloat *current_heightmap = NULL;
 GLfloat **current_normalmap = NULL;
@@ -55,7 +60,7 @@ GLfloat cloud_move_angle = 1;
 
 GLfloat water_t = 0;
 
-GLfloat x_off = 0, y_off = 0, z_off = 0, h_angle = 0, v_angle = 0;
+GLfloat x_off = 0, y_off = 0, z_off = 0, h_angle = -45, v_angle = 0;
 
 GLuint terrain_textures[TEXTURE_COUNT];
 
@@ -101,8 +106,8 @@ void make_textures(){
 	terrain_textures[TEXTURE_GRASS] = make_grass_texture();
 	terrain_textures[TEXTURE_ROCK] = make_rock_texture();
 
-	terrain_textures[TEXTURE_GRASS_ALPHA] = range_fade_texture(current_heightmap, size, size, .2*15, .5*15, 1*15, 1.1*15);
-	terrain_textures[TEXTURE_ROCK_ALPHA] = range_fade_texture(current_heightmap, size, size, .8*15, .9*15, 1*15, 1.1*15);
+	terrain_textures[TEXTURE_GRASS_ALPHA] = range_fade_texture(current_heightmap, size, size, .2*max_terrain_height, .5*max_terrain_height, 1*max_terrain_height, 1.1*max_terrain_height);
+	terrain_textures[TEXTURE_ROCK_ALPHA] = range_fade_texture(current_heightmap, size, size, .8*max_terrain_height, .9*max_terrain_height, 1*max_terrain_height, 1.1*max_terrain_height);
 }
 
 GLfloat ground_height(GLfloat x, GLfloat z){
@@ -170,7 +175,7 @@ void make_treemap(int seed){
 	if(treemap != NULL){
 		delete[] treemap;
 	}
-	treemap = range_fade(current_heightmap, size, size, .4*15, .5*15, .8*15, .9*15);
+	treemap = range_fade(current_heightmap, size, size, .4*max_terrain_height, .5*max_terrain_height, .8*max_terrain_height, .9*max_terrain_height);
 	for(int z = 0; z < size; z++){
 		treemap[z*size] = 0; // we don't want trees on the edge
 		for(int x = 1; x < size; x++){
@@ -291,7 +296,7 @@ void draw_water(GLfloat water_level, GLfloat ripple, GLfloat t){
 	int water_res = 4;
 	glBegin(GL_QUADS);
 	glNormal3f(0,1,0);
-	glColor4f(0,.4,.7, .93);
+	glColor4f(0,.6,.8, .94);
 	int z_start, z_end, z_dir, x_start, x_end, x_dir;
 	if(cos(PI*h_angle/180.0) < 0){
 		z_start = 0;
@@ -325,7 +330,7 @@ void draw_water(GLfloat water_level, GLfloat ripple, GLfloat t){
 	glEnable(GL_TEXTURE_2D);
 }
 
-void draw_scene(GLfloat light_pos[4]){
+void draw_scene(){
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 	
@@ -350,7 +355,7 @@ void draw_scene(GLfloat light_pos[4]){
 		draw_heightmap_vector(current_heightmap,size,size);
 	}
 	glCallList(treemap_dl);
-	draw_water(.35*15,.2,water_t);
+	draw_water(.35*max_terrain_height,.2,water_t);
 
 	glTranslatef(0,0,-size);
 	glTranslatef(size/2,0,size/2); // Translate so we're rotating around the center of the land
@@ -375,15 +380,14 @@ void resize(int w, int h)
 }
 
 void keyboard(Uint8 *keys){
-	GLfloat speed = .1;
 	if(keys[SDLK_w]){
 		if(flying){
 			x_off -= cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
 			z_off += cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
 			y_off -= sin(PI*v_angle/180.0)*speed;
 		} else {
-			x_off -= cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
-			z_off += cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
+			x_off -= sin(PI*h_angle/180.0)*speed;
+			z_off += cos(PI*h_angle/180.0)*speed;
 			if(x_off < 0){
 				x_off = 0;
 			} else if(x_off > size - 1){
@@ -403,8 +407,8 @@ void keyboard(Uint8 *keys){
 			z_off -= cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
 			y_off += sin(PI*v_angle/180.0)*speed;
 		} else {
-			x_off += cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
-			z_off -= cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
+			x_off += sin(PI*h_angle/180.0)*speed;
+			z_off -= cos(PI*h_angle/180.0)*speed;
 			if(x_off < 0){
 				x_off = 0;
 			} else if(x_off > size - 1){
@@ -469,20 +473,20 @@ void keyboard(Uint8 *keys){
 		}
 	}
 	if(keys[SDLK_j]){
-		h_angle -= 3*speed;
+		h_angle -= 4*speed;
 	}
 	if(keys[SDLK_l]){
-		h_angle += 3*speed;
+		h_angle += 4*speed;
 	}
 	if(keys[SDLK_i]){
-		v_angle -= 3*speed;
+		v_angle -= 4*speed;
 	}
 	if(keys[SDLK_k]){
-		v_angle += 3*speed;
+		v_angle += 4*speed;
 	}
 	if(keys[SDLK_z]){
 		current_heightmap = perlin_noise(power,power,.5,0,power-1);
-		current_heightmap = normalize(current_heightmap, size, size, 15);
+		current_heightmap = normalize(current_heightmap, size, size, max_terrain_height);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 		make_textures();
 		make_terrain();
@@ -497,6 +501,7 @@ void keyboard(Uint8 *keys){
 	}
 	if(keys[SDLK_h]){
 		hillify(current_heightmap, size, size, hill_factor);
+		max_terrain_height = (GLfloat)pow((GLfloat)max_terrain_height,(GLfloat)hill_factor);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 		make_terrain();
 		make_treemap(tree_seed);
@@ -506,6 +511,7 @@ void keyboard(Uint8 *keys){
 	}
 	if(keys[SDLK_y]){
 		hillify(current_heightmap, size, size, 1.0/hill_factor);
+		max_terrain_height = (GLfloat)pow((GLfloat)max_terrain_height,(GLfloat)1.0/hill_factor);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 		make_terrain();
 		make_treemap(tree_seed);
@@ -596,14 +602,39 @@ void keyboard(Uint8 *keys){
 		if(keys[key]){
 			power = key - SDLK_0;
 			size = (int)pow((GLfloat)2,power);
+			max_terrain_height = (GLfloat)size/max_height_div;
 			current_heightmap = perlin_noise(power,power,.5,0,power-1);
-			current_heightmap = normalize(current_heightmap, size, size, 15);
+			current_heightmap = normalize(current_heightmap, size, size, max_terrain_height);
 			current_normalmap = make_normalmap(current_heightmap,size,size);
+			make_textures();
 			make_terrain();
 			make_treemap(tree_seed);
 			if(!flying){
 				y_off = ground_height(x_off, z_off)+player_height;
 			}
+			fog_amount = pow(fog_decay,power);
+			if(fog){
+				glEnable(GL_FOG);
+				glFogi(GL_FOG_MODE, GL_EXP2);
+				GLfloat fog_color[] = {0.8, 0.8, 0.8, 1.0};
+				glFogfv(GL_FOG_COLOR, fog_color);
+				glFogf(GL_FOG_DENSITY, fog_amount);
+				glHint(GL_FOG_HINT, GL_NICEST);
+			} else {
+				glDisable(GL_FOG);
+			}
+			if(x_off < 0){
+				x_off = 0;
+			} else if(x_off > size - 1){
+				x_off = size - 1;
+			}
+			if(z_off < 0){
+				z_off = 0;
+			} else if(z_off > size - 1){
+				z_off = size - 1;
+			}
+			y_off = ground_height(x_off, z_off)+player_height;
+			light_pos[1] = size/2;
 		}
 	}
 }
@@ -622,9 +653,10 @@ GLfloat **d1_to_d2(GLfloat *one, int w, int h){
 int main(int argc, char **argv){
 	srand(time(0));
 	size = (int)pow((GLfloat)2,power);
+	max_terrain_height = (GLfloat)size/max_height_div;
 	//current_heightmap = make_terramap(power,.25); // Old way
 	current_heightmap = perlin_noise(power,power,.5,0,power-1);
-	current_heightmap = normalize(current_heightmap, size, size, 15);
+	current_heightmap = normalize(current_heightmap, size, size, max_terrain_height);
 	current_normalmap = make_normalmap(current_heightmap,size,size);
 	y_off = ground_height(0, 0)+player_height;
 
@@ -668,7 +700,7 @@ int main(int argc, char **argv){
 
 	resize(cur_screen_w, cur_screen_h);
 
-	GLfloat light_pos[4] = {0,50,0,1.0};
+	light_pos[1] = size/2; // nice y value
 
 	make_textures();
 
@@ -742,7 +774,7 @@ int main(int argc, char **argv){
 
 		keyboard(keys);
 
-		draw_scene(light_pos);
+		draw_scene();
 
 		SDL_GL_SwapBuffers();
 		frames++;
