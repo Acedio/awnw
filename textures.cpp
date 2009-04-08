@@ -193,7 +193,7 @@ GLuint make_tree_texture(){
 	for(int y = 0; y < size/4; y++){
 		for(int x = 0; x < size/4; x++){
 			GLfloat d = (GLfloat)(x-size/8)/(GLfloat)(size/4)*2;
-			tree_nostretch[y*size/4+x] = -1.7*pow(abs(d),1.3)+4*(GLfloat)y/(GLfloat)size;
+			tree_nostretch[y*size/4+x] = -1.7*pow((float)abs(d),(float)1.3)+4*(GLfloat)y/(GLfloat)size;
 			if(tree_nostretch[y*size/4+x] < 0){
 				tree_nostretch[y*size/4+x] = 0;
 			} else if(tree_nostretch[y*size/4+x] > 1){

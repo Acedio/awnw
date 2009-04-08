@@ -43,14 +43,14 @@ bool fog = true;
 bool light = true;
 bool flat = false;
 bool flying = false;
-GLfloat fog_amount = .004;
+GLfloat fog_amount = .005;
 
 GLfloat *current_heightmap = NULL;
 GLfloat **current_normalmap = NULL;
 
 GLfloat cloud_move_x = 0;
 GLfloat cloud_move_y = 0;
-GLfloat cloud_move_speed = .0002;
+GLfloat cloud_move_speed = .0005;
 GLfloat cloud_move_angle = 1;
 
 GLfloat water_t = 0;
@@ -105,6 +105,19 @@ void make_textures(){
 	terrain_textures[TEXTURE_ROCK_ALPHA] = range_fade_texture(current_heightmap, size, size, .8*15, .9*15, 1*15, 1.1*15);
 }
 
+GLfloat ground_height(GLfloat x, GLfloat z){
+	GLfloat dx = x - (GLfloat)((int)x); // this is a stupid way to do this. whatever, it's late.
+	GLfloat dz = z - (GLfloat)((int)z);
+	GLfloat y00 = current_heightmap[(int)floor(size-1-z)*size+(int)floor(size-1-x)];
+	GLfloat y01 = current_heightmap[(int)floor(size-1-z)*size+(int)floor(size-1-x-1)];
+	GLfloat y0mid = y00+smoothstep(dx)*(y01-y00);
+	GLfloat y10 = current_heightmap[(int)floor(size-1-z-1)*size+(int)floor(size-1-x)];
+	GLfloat y11 = current_heightmap[(int)floor(size-1-z-1)*size+(int)floor(size-1-x-1)];
+	GLfloat y1mid = y10+smoothstep(dx)*(y11-y10);
+	GLfloat height = y0mid+smoothstep(dz)*(y1mid-y0mid);
+	return height;
+}
+
 void draw_forests(){
 	glColor3f(1,1,1);
 
@@ -125,22 +138,22 @@ void draw_forests(){
 		for(int x = 0; x < size; x++){
 			if(treemap[z*size+x] > .9){
 				glTexCoord2f(0,1);
-				glVertex3f(x-.75,current_heightmap[z*size+x],z);
+				glVertex3f(x-.75+2*(treemap[z*size+x]-.75),current_heightmap[z*size+x],z+2*(treemap[z*size+x]-.75));
 				glTexCoord2f(0,0);
-				glVertex3f(x-.75,1+current_heightmap[z*size+x],z);
+				glVertex3f(x-.75+2*(treemap[z*size+x]-.75),4*(treemap[z*size+x]-.75)*2+current_heightmap[z*size+x],z+2*(treemap[z*size+x]-.75));
 				glTexCoord2f(1,0);
-				glVertex3f(x+.75,1+current_heightmap[z*size+x],z);
+				glVertex3f(x+.75+2*(treemap[z*size+x]-.75),4*(treemap[z*size+x]-.75)*2+current_heightmap[z*size+x],z+2*(treemap[z*size+x]-.75));
 				glTexCoord2f(1,1);
-				glVertex3f(x+.75,current_heightmap[z*size+x],z);
+				glVertex3f(x+.75+2*(treemap[z*size+x]-.75),current_heightmap[z*size+x],z+2*(treemap[z*size+x]-.75));
 
 				glTexCoord2f(0,1);
-				glVertex3f(x,current_heightmap[z*size+x],z-.75);
+				glVertex3f(x+2*(treemap[z*size+x]-.75),current_heightmap[z*size+x],z-.75+2*(treemap[z*size+x]-.75));
 				glTexCoord2f(0,0);
-				glVertex3f(x,1+current_heightmap[z*size+x],z-.75);
+				glVertex3f(x+2*(treemap[z*size+x]-.75),4*(treemap[z*size+x]-.75)*2+current_heightmap[z*size+x],z-.75+2*(treemap[z*size+x]-.75));
 				glTexCoord2f(1,0);
-				glVertex3f(x,1+current_heightmap[z*size+x],z+.75);
+				glVertex3f(x+2*(treemap[z*size+x]-.75),4*(treemap[z*size+x]-.75)*2+current_heightmap[z*size+x],z+.75+2*(treemap[z*size+x]-.75));
 				glTexCoord2f(1,1);
-				glVertex3f(x,current_heightmap[z*size+x],z+.75);
+				glVertex3f(x+2*(treemap[z*size+x]-.75),current_heightmap[z*size+x],z+.75+2*(treemap[z*size+x]-.75));
 			}
 		}
 	}
@@ -359,18 +372,18 @@ void resize(int w, int h)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glViewport(0, 0, w, h);
-	gluPerspective(45.0f,1.0f*w/h,1.0f,850.0f);
+	gluPerspective(45.0f,1.0f*w/h,1.0f,2000.0f);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
 
 void keyboard(Uint8 *keys){
-	GLfloat speed = .5;
+	GLfloat speed = .1;
 	if(keys[SDLK_w]){
 		if(flying){
 			x_off -= cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
 			z_off += cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
-			y_off += sin(PI*v_angle/180.0)*speed;
+			y_off -= sin(PI*v_angle/180.0)*speed;
 		} else {
 			x_off -= cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
 			z_off += cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
@@ -384,14 +397,14 @@ void keyboard(Uint8 *keys){
 			} else if(z_off > size - 1){
 				z_off = size - 1;
 			}
-			y_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)] + player_height;
+			y_off = ground_height(x_off, z_off)+player_height;
 		}
 	}
 	if(keys[SDLK_s]){
 		if(flying){
 			x_off += cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
 			z_off -= cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
-			y_off -= sin(PI*v_angle/180.0)*speed;
+			y_off += sin(PI*v_angle/180.0)*speed;
 		} else {
 			x_off += cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
 			z_off -= cos(PI*v_angle/180.0)*cos(PI*h_angle/180.0)*speed;
@@ -405,22 +418,58 @@ void keyboard(Uint8 *keys){
 			} else if(z_off > size - 1){
 				z_off = size - 1;
 			}
-			y_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)] + player_height;
+			y_off = ground_height(x_off, z_off)+player_height;
 		}
 	}
 	if(keys[SDLK_a]){
-		x_off += cos(PI*h_angle/180.0)*speed;
-		z_off += sin(PI*h_angle/180.0)*speed;
+		if(flying){
+			x_off += cos(PI*h_angle/180.0)*speed;
+			z_off += sin(PI*h_angle/180.0)*speed;
+		} else {
+			x_off += cos(PI*h_angle/180.0)*speed;
+			z_off += sin(PI*h_angle/180.0)*speed;
+			if(x_off < 0){
+				x_off = 0;
+			} else if(x_off > size - 1){
+				x_off = size - 1;
+			}
+			if(z_off < 0){
+				z_off = 0;
+			} else if(z_off > size - 1){
+				z_off = size - 1;
+			}
+			y_off = ground_height(x_off, z_off)+player_height;
+		}
 	}
 	if(keys[SDLK_d]){
-		x_off -= cos(PI*h_angle/180.0)*speed;
-		z_off -= sin(PI*h_angle/180.0)*speed;
+		if(flying){
+			x_off -= cos(PI*h_angle/180.0)*speed;
+			z_off -= sin(PI*h_angle/180.0)*speed;
+		} else {
+			x_off -= cos(PI*h_angle/180.0)*speed;
+			z_off -= sin(PI*h_angle/180.0)*speed;
+			if(x_off < 0){
+				x_off = 0;
+			} else if(x_off > size - 1){
+				x_off = size - 1;
+			}
+			if(z_off < 0){
+				z_off = 0;
+			} else if(z_off > size - 1){
+				z_off = size - 1;
+			}
+			y_off = ground_height(x_off, z_off)+player_height;
+		}
 	}
 	if(keys[SDLK_r]){
-		y_off -= speed;
+		if(flying){
+			y_off += speed;
+		}
 	}
 	if(keys[SDLK_f]){
-		y_off += speed;
+		if(flying){
+			y_off -= speed;
+		}
 	}
 	if(keys[SDLK_j]){
 		h_angle -= 3*speed;
@@ -441,28 +490,40 @@ void keyboard(Uint8 *keys){
 		make_textures();
 		make_terrain();
 		make_treemap(tree_seed);
+		if(!flying){
+			y_off = ground_height(x_off, z_off)+player_height;
+		}
 	}
 	if(keys[SDLK_o]){
-		oceanify(current_heightmap, size, size, 0.1);
-		current_normalmap = make_normalmap(current_heightmap,size,size);
+		//oceanify(current_heightmap, size, size, 0.1);
+		//current_normalmap = make_normalmap(current_heightmap,size,size);
 	}
 	if(keys[SDLK_h]){
 		hillify(current_heightmap, size, size, hill_factor);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 		make_terrain();
 		make_treemap(tree_seed);
+		if(!flying){
+			y_off = ground_height(x_off, z_off)+player_height;
+		}
 	}
 	if(keys[SDLK_y]){
 		hillify(current_heightmap, size, size, 1.0/hill_factor);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 		make_terrain();
 		make_treemap(tree_seed);
+		if(!flying){
+			y_off = ground_height(x_off, z_off)+player_height;
+		}
 	}
 	if(keys[SDLK_g]){
 		smoothify(current_heightmap, size, size, .9);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
 		make_terrain();
 		make_treemap(tree_seed);
+		if(!flying){
+			y_off = ground_height(x_off, z_off)+player_height;
+		}
 	}
 	if(keys[SDLK_u]){
 		spinning = !spinning;
@@ -543,6 +604,9 @@ void keyboard(Uint8 *keys){
 			current_normalmap = make_normalmap(current_heightmap,size,size);
 			make_terrain();
 			make_treemap(tree_seed);
+			if(!flying){
+				y_off = ground_height(x_off, z_off)+player_height;
+			}
 		}
 	}
 }
@@ -565,6 +629,7 @@ int main(int argc, char **argv){
 	current_heightmap = perlin_noise(power,power,.5,0,power-1);
 	current_heightmap = normalize(current_heightmap, size, size, 15);
 	current_normalmap = make_normalmap(current_heightmap,size,size);
+	y_off = ground_height(0, 0)+player_height;
 
 	SDL_Surface *screen;
 
