@@ -10,7 +10,7 @@
 
 GLfloat *create_noise_map(int w, int h);
 
-inline GLfloat smoothstep(GLfloat x);
+GLfloat smoothstep(GLfloat x);
 
 GLfloat *linear_stretch_map(GLfloat *map, int w, int h, int x_scale, int y_scale);
 GLfloat *smooth_stretch_map(GLfloat *map, int w, int h, int x_scale, int y_scale);

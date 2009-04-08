@@ -55,7 +55,7 @@ GLfloat cloud_move_angle = 1;
 
 GLfloat water_t = 0;
 
-GLfloat x_off = 0, y_off = 0, z_off = 0, h_angle = 0, v_angle = 45;
+GLfloat x_off = 0, y_off = 0, z_off = 0, h_angle = 0, v_angle = 0;
 
 GLuint terrain_textures[TEXTURE_COUNT];
 
@@ -187,17 +187,6 @@ void make_treemap(int seed){
 	glNewList(treemap_dl,GL_COMPILE);
 	draw_forests();
 	glEndList();
-}
-
-void draw_terrain(){
-	if(spinning){
-		spin += spin_speed;
-	}
-	if(textured){
-		glCallList(terrain_dl);
-	} else {
-		draw_heightmap_vector(current_heightmap,size,size);
-	}
 }
 
 void make_terrain(){
@@ -355,7 +344,11 @@ void draw_scene(GLfloat light_pos[4]){
 	glRotatef(spin,0,1,0); // Yoshi's Island spin!
 	glTranslatef(-size/2,0,-size/2); // Translate back
 
-	draw_terrain();
+	if(textured){
+		glCallList(terrain_dl);
+	} else {
+		draw_heightmap_vector(current_heightmap,size,size);
+	}
 	glCallList(treemap_dl);
 	draw_water(.35*15,.2,water_t);
 
@@ -363,6 +356,10 @@ void draw_scene(GLfloat light_pos[4]){
 	glTranslatef(size/2,0,size/2); // Translate so we're rotating around the center of the land
 	glRotatef(-spin,0,1,0); // Yoshi's Island spin!
 	glTranslatef(-size/2,0,-size/2); // Translate back
+
+	if(spinning){
+		spin += spin_speed;
+	}
 
 	water_t += .005;
 }
@@ -769,7 +766,7 @@ int main(int argc, char **argv){
 
 	delete[] current_heightmap;
 
-	delete[] treemap;
+	//delete[] treemap;
 
 	for(int i = 0; i < size*size; i++){
 		delete[] current_normalmap[i];

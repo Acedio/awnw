@@ -164,7 +164,6 @@ GLuint make_rock_texture(){
 		}
 	}
 	delete[] rock;
-	rgb_to_file(tex,size,size,"lol.ppm");
 
 	GLuint texture;
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -201,7 +200,6 @@ GLuint make_tree_texture(){
 			}
 		}
 	}
-	to_file(tree_nostretch,size/4,size/4,"tree.pgm");
 	GLfloat *tree = smooth_stretch_map(tree_nostretch, size/4, size/4, 4, 4);
 	delete[] tree_nostretch;
 	GLfloat *foliage_nostretch = perlin_noise(power-2, power, .75, 1, power-2);
