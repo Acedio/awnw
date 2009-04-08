@@ -330,7 +330,7 @@ void draw_scene(GLfloat light_pos[4]){
 	// Transforms for camera view
 	glRotatef(h_angle,0,1,0);
 	glRotatef(v_angle,cos(PI*h_angle/180.0),0,sin(PI*h_angle/180.0));
-	glTranslatef(x_off-size/2,y_off,z_off-size);
+	glTranslatef(x_off-size,-y_off,z_off-size);
 	glTranslatef(size/2,0,size/2);
 	glLightfv(GL_LIGHT0, GL_POSITION, light_pos);
 	glTranslatef(-size/2,0,-size/2);
@@ -384,7 +384,7 @@ void keyboard(Uint8 *keys){
 			} else if(z_off > size - 1){
 				z_off = size - 1;
 			}
-			y_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)];
+			y_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)] + player_height;
 		}
 	}
 	if(keys[SDLK_s]){
@@ -405,7 +405,7 @@ void keyboard(Uint8 *keys){
 			} else if(z_off > size - 1){
 				z_off = size - 1;
 			}
-			y_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)];
+			y_off = current_heightmap[(int)floor(z_off)*size+(int)floor(x_off)] + player_height;
 		}
 	}
 	if(keys[SDLK_a]){
