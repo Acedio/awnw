@@ -135,48 +135,55 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 	glColor3f(1,1,1);
 
 	glEnable(GL_LIGHTING);
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
+	glEnable(GL_LIGHT0);
 
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0); // we always have atleast one texture stage
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
+	
+	if(max_textures > 2){ // enough for sand layer?
+		glActiveTexture(GL_TEXTURE1);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS_ALPHA]);
 
-	glActiveTexture(GL_TEXTURE1);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS_ALPHA]);
+		glActiveTexture(GL_TEXTURE2);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SAND]);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+		glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE);
+		glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE0);
+		glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+		glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE2);
+		glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+		glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE1);
+		glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA);
 
-	glActiveTexture(GL_TEXTURE2);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SAND]);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE0);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE2);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE1);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA);
+		if(max_textures > 4){ //enough for rock layer?
+			glActiveTexture(GL_TEXTURE3);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ROCK_ALPHA]);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE);
+			glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE4);
+			glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+			glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PREVIOUS);
+			glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+			glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE3);
+			glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA);
 
-	glActiveTexture(GL_TEXTURE3);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ROCK_ALPHA]);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE4);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PREVIOUS);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE3);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA);
-
-	glActiveTexture(GL_TEXTURE4);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ROCK]);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PRIMARY_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+			glActiveTexture(GL_TEXTURE4);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ROCK]);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
+			glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_MODULATE);
+			glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_PREVIOUS);
+			glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
+			glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PRIMARY_COLOR);
+			glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
+		}
+	}
 
 	glBegin(GL_TRIANGLE_STRIP);
 	for(int y = 0; y < h; y++){
@@ -186,34 +193,50 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 			GLfloat fx = (GLfloat)(x)/32.0;
 
 			glMultiTexCoord2f(GL_TEXTURE0,fx,fy);
-			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE2,fx,fy);
-			glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE4,fx,fy);
+			if(max_textures > 2){
+				glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
+				glMultiTexCoord2f(GL_TEXTURE2,fx,fy);
+				if(max_textures > 4){
+					glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
+					glMultiTexCoord2f(GL_TEXTURE4,fx,fy);
+				}
+			}
 			glNormal3fv(normalmap[(y%h)*w+x%w]);
 			glVertex3f((GLfloat)x,heightmap[(y%h)*w+x%w],(GLfloat)y);
 
 			glMultiTexCoord2f(GL_TEXTURE0,fx,fy1);
-			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE2,fx,fy1);
-			glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
-			glMultiTexCoord2f(GL_TEXTURE4,fx,fy1);
+			if(max_textures > 2){
+				glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
+				glMultiTexCoord2f(GL_TEXTURE2,fx,fy1);
+				if(max_textures > 4){
+					glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
+					glMultiTexCoord2f(GL_TEXTURE4,fx,fy1);
+				}
+			}
 			glNormal3fv(normalmap[((y+1)%h)*w+x%w]);
 			glVertex3f((GLfloat)x,heightmap[((y+1)%h)*w+x%w],(GLfloat)(y+1));
 		}
 		glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)w/(GLfloat)32,fy1);
-		glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)w/(GLfloat)32,fy1);
-		glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE4,(GLfloat)w/(GLfloat)32,fy1);
+		if(max_textures > 2){
+			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)w/(GLfloat)32,fy1);
+			if(max_textures > 4){
+				glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
+				glMultiTexCoord2f(GL_TEXTURE4,(GLfloat)w/(GLfloat)32,fy1);
+			}
+		}
 		glNormal3fv(normalmap[(y+1)%h+0]);
 		glVertex3f((GLfloat)w,heightmap[((y+1)%h)*w+0],(GLfloat)(y+1));
 
 		glMultiTexCoord2f(GL_TEXTURE0,0,fy1);
-		glMultiTexCoord2f(GL_TEXTURE1,0,fy1);
-		glMultiTexCoord2f(GL_TEXTURE2,0,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE3,0,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE4,0,fy1);
+		if(max_textures > 2){
+			glMultiTexCoord2f(GL_TEXTURE1,0,fy1);
+			glMultiTexCoord2f(GL_TEXTURE2,0,(GLfloat)(y+1)/(GLfloat)h);
+			if(max_textures > 4){
+				glMultiTexCoord2f(GL_TEXTURE3,0,(GLfloat)(y+1)/(GLfloat)h);
+				glMultiTexCoord2f(GL_TEXTURE4,0,fy1);
+			}
+		}
 		glNormal3fv(normalmap[((y+1)%h)*w+0]);
 		glVertex3f((GLfloat)0,heightmap[((y+1)%h)*w+0],(GLfloat)(y+1));
 	}
@@ -238,8 +261,6 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, NULL);
 	glDisable(GL_TEXTURE_2D);
-
-	glEnable(GL_LIGHTING);
 }
 
 GLfloat **make_normalmap(GLfloat *heightmap, int w, int h){

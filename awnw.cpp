@@ -217,8 +217,8 @@ void draw_clouds(){
 	glColor3f(1,1,1);
 
 	glEnable(GL_TEXTURE_2D);
-
 	glBindTexture(GL_TEXTURE_2D, cloud_texture);
+
 	glColor3f(1,1,1);
 	if(light){
 		glDisable(GL_LIGHTING); // We want our clouds to be bright and shiny and unaffected by lighting
@@ -743,6 +743,9 @@ int main(int argc, char **argv){
 
 	light_pos[1] = size/2; // nice y value
 
+	glGetIntegerv(GL_MAX_TEXTURE_UNITS, &max_textures);
+	cout << "max multitextures: " << max_textures << endl;
+
 	make_textures();
 
 	terrain_dl = glGenLists(1);
@@ -758,9 +761,6 @@ int main(int argc, char **argv){
 
 	int frames = 0;
 	int start = SDL_GetTicks();
-
-	glGetIntegerv(GL_MAX_TEXTURE_UNITS, &max_textures);
-	cout << "max multitextures: " << max_textures << endl;
 
 	while(running){
 		SDL_Event event;
@@ -818,7 +818,7 @@ int main(int argc, char **argv){
 
 		SDL_GL_SwapBuffers();
 		frames++;
-		if(frames >= 1000){
+		if(frames >= 250){
 			int millis = SDL_GetTicks() - start;
 			cout << (1000 * frames) / millis << " FPS" << endl;
 			frames = 0;
