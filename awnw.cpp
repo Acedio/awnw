@@ -35,6 +35,7 @@ bool running = true;
 int power=7, size;
 GLfloat max_terrain_height;
 const GLfloat max_height_div = 6.0;
+int max_textures;
 GLfloat hill_factor = .97;
 bool spinning = false;
 GLfloat spin = 0;
@@ -76,6 +77,7 @@ const int player_height = 3;
 GLuint terrain_dl;
 
 void make_textures(){
+// creates and recreates all textures and texture alpha fades
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_TEXTURE_2D);
 	if(glIsTexture(cloud_texture)){
@@ -111,7 +113,8 @@ void make_textures(){
 }
 
 GLfloat ground_height(GLfloat x, GLfloat z){
-	GLfloat dx = x - (GLfloat)((int)x); // this is a stupid way to do this. whatever, it's late.
+// returns the (interpolated) height at the given (x,z) coord
+	GLfloat dx = x - (GLfloat)((int)x); // this is a stupid way to do this.
 	GLfloat dz = z - (GLfloat)((int)z);
 	GLfloat y00 = current_heightmap[(int)floor(size-1-z)*size+(int)floor(size-1-x)];
 	GLfloat y01 = current_heightmap[(int)floor(size-1-z)*size+(int)floor(size-1-x-1)];
@@ -124,6 +127,7 @@ GLfloat ground_height(GLfloat x, GLfloat z){
 }
 
 void draw_forests(){
+// draws the current treemap
 	glColor3f(1,1,1);
 
 	glEnable(GL_TEXTURE_2D);
@@ -172,6 +176,7 @@ void draw_forests(){
 }
 
 void make_treemap(int seed){
+// creates (or recreates) the treemap for the current terrain
 	if(treemap != NULL){
 		delete[] treemap;
 	}
@@ -195,15 +200,17 @@ void make_treemap(int seed){
 }
 
 void make_terrain(){
+// (re)creates the display list for the terrain
 	glDeleteLists(terrain_dl,1);
 	terrain_dl = glGenLists(1);
 	
 	glNewList(terrain_dl,GL_COMPILE);
-	draw_heightmap_texture(current_heightmap,current_normalmap,terrain_textures,size,size);
+	draw_heightmap_texture(current_heightmap,current_normalmap,terrain_textures,max_textures,size,size);
 	glEndList();
 }
 
 void draw_clouds(){
+// draws the moving clouds. preeeeettttty :D
 	glTranslatef(size/2,0,size/2); // Translate to center so the clouds are drawn around the center
 	// draw cloud spehere
 	
@@ -286,17 +293,27 @@ void draw_clouds(){
 }
 
 void draw_water(GLfloat water_level, GLfloat ripple, GLfloat t){
-	glEnable(GL_LIGHTING);
-	glEnable(GL_COLOR_MATERIAL);
-	glColorMaterial ( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE ) ;
-	glEnable(GL_LIGHT0);
+// draws our nice fake wavy water
 	glDisable(GL_TEXTURE_2D);
+
+	glEnable(GL_LIGHTING);
+	//glEnable(GL_COLOR_MATERIAL);
+	//glColorMaterial( GL_FRONT_AND_BACK, GL_SPECULAR ) ;
+	//glColorMaterial( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE) ;
+	//glEnable(GL_LIGHT0);
+
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// specular didn't really look that great...
+	//GLfloat specular[] = {.5,.5,.5,.5};
+	//glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+
 	int water_res = 4;
 	glBegin(GL_QUADS);
-	glNormal3f(0,1,0);
-	glColor4f(0,.6,.8, .94);
+
+	glColor4f(0,.6,.8,.90);
+	glNormal3f(0,1,0); // we don't need no shtinking normals!
 	int z_start, z_end, z_dir, x_start, x_end, x_dir;
 	if(cos(PI*h_angle/180.0) < 0){
 		z_start = 0;
@@ -318,19 +335,40 @@ void draw_water(GLfloat water_level, GLfloat ripple, GLfloat t){
 	}
 	for(int z = z_start; z_dir*z < z_dir*z_end; z += z_dir*water_res){
 		for(int x = x_start; x_dir*x < x_dir*x_end; x += x_dir*water_res){
+			GLfloat dx = -ripple*sin((GLfloat)x+3*t);
+			GLfloat dz = ripple*cos((GLfloat)z+2*t);
+			GLfloat l = sqrt(dx*dx+dz*dz+1);
+			glNormal3f(dx/l, 1.0/l, dz/l);
 			glVertex3f(x,ripple*cos((GLfloat)x+t*3)+ripple*sin((GLfloat)z+t*2)+water_level,z);
+
+			dz = ripple*cos((GLfloat)(z+water_res)+2*t);
+			l = sqrt(dx*dx+dz*dz+1);
+			glNormal3f(dx/l, 1.0/l, dz/l);
 			glVertex3f(x,ripple*cos((GLfloat)x+t*3)+ripple*sin((GLfloat)(z+water_res)+t*2)+water_level,z+water_res);
+
+			dx = -ripple*sin((GLfloat)(x+water_res)+3*t);
+			l = sqrt(dx*dx+dz*dz+1);
+			glNormal3f(dx/l, 1.0/l, dz/l);
 			glVertex3f(x+water_res,ripple*cos((GLfloat)(x+water_res)+t*3)+ripple*sin((GLfloat)(z+water_res)+t*2)+water_level,z+water_res);
+
+			dz = ripple*cos((GLfloat)z+2*t);
+			l = sqrt(dx*dx+dz*dz+1);
+			glNormal3f(dx/l, 1.0/l, dz/l);
 			glVertex3f(x+water_res,ripple*cos((GLfloat)(x+water_res)+t*3)+ripple*sin((GLfloat)z+t*2)+water_level,z);
 		}
 	}
 	glEnd();
 	glDisable(GL_BLEND);
+
+	//specular[0] = specular[1] = specular[2] = specular[3] = 0;
+	//glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
 	glDisable(GL_LIGHTING);
+
 	glEnable(GL_TEXTURE_2D);
 }
 
 void draw_scene(){
+// draws the whole world
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 	
@@ -371,6 +409,7 @@ void draw_scene(){
 
 void resize(int w, int h)
 {
+// simple reshape function. set's up a perspective viewing volume.
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glViewport(0, 0, w, h);
@@ -380,6 +419,7 @@ void resize(int w, int h)
 }
 
 void keyboard(Uint8 *keys){
+// big ol' key function that acts on user input
 	if(keys[SDLK_w]){
 		if(flying){
 			x_off -= cos(PI*v_angle/180.0)*sin(PI*h_angle/180.0)*speed;
@@ -640,6 +680,7 @@ void keyboard(Uint8 *keys){
 }
 
 GLfloat **d1_to_d2(GLfloat *one, int w, int h){
+// obsolete. used back when I was using multidimensional arrays
 	GLfloat **two = new GLfloat*[h];
 	for(int y = 0; y < h; y++){
 		two[y] = new GLfloat[w];
@@ -655,7 +696,7 @@ int main(int argc, char **argv){
 	size = (int)pow((GLfloat)2,power);
 	max_terrain_height = (GLfloat)size/max_height_div;
 	//current_heightmap = make_terramap(power,.25); // Old way
-	current_heightmap = perlin_noise(power,power,.5,0,power-1);
+	current_heightmap = perlin_noise(power,power,.5,0,power-1); // new way!
 	current_heightmap = normalize(current_heightmap, size, size, max_terrain_height);
 	current_normalmap = make_normalmap(current_heightmap,size,size);
 	y_off = ground_height(0, 0)+player_height;
@@ -718,9 +759,8 @@ int main(int argc, char **argv){
 	int frames = 0;
 	int start = SDL_GetTicks();
 
-	GLint max;
-	glGetIntegerv(GL_MAX_TEXTURE_UNITS, &max);
-	cout << "max: " << max << endl;
+	glGetIntegerv(GL_MAX_TEXTURE_UNITS, &max_textures);
+	cout << "max multitextures: " << max_textures << endl;
 
 	while(running){
 		SDL_Event event;
@@ -798,7 +838,7 @@ int main(int argc, char **argv){
 
 	delete[] current_heightmap;
 
-	//delete[] treemap;
+	delete[] treemap;
 
 	for(int i = 0; i < size*size; i++){
 		delete[] current_normalmap[i];

@@ -16,6 +16,8 @@ using namespace std;
 #include "map.h"
 
 void cloudify(GLfloat *map, int w, int h, GLfloat cover, GLfloat sharpness){
+// the best way of describing this function is it makes the nice spacing between clouds
+// anything below cover is set to 0. everything else is mostly white with nice edge fades between
 	int y;
 	for(y = 0; y < h; y++){
 		int x;
@@ -31,7 +33,7 @@ void cloudify(GLfloat *map, int w, int h, GLfloat cover, GLfloat sharpness){
 }
 
 GLuint make_cloud_texture(){
-	//this works well for 256x256 clouds
+//this works well for 256x256 clouds
 	int power = 8;
 	int size = pow((GLfloat)2,power);
 	GLfloat *perlin = perlin_noise(power,power,.5,0,5);
@@ -55,8 +57,6 @@ GLuint make_cloud_texture(){
 	glGenTextures(1,&texture);
 	glBindTexture(GL_TEXTURE_2D,texture);
 
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -71,6 +71,7 @@ GLuint make_cloud_texture(){
 }
 
 GLuint make_grass_texture(){
+// this is my favorite texture in the demo ;D
 	int power = 8;
 	int size = pow((GLfloat)2,power);
 
@@ -98,8 +99,6 @@ GLuint make_grass_texture(){
 
 	glGenTextures(1,&texture);
 	glBindTexture(GL_TEXTURE_2D,texture);
-
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -136,8 +135,6 @@ GLuint make_sand_texture(){
 	glGenTextures(1,&texture);
 	glBindTexture(GL_TEXTURE_2D,texture);
 
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -170,8 +167,6 @@ GLuint make_rock_texture(){
 
 	glGenTextures(1,&texture);
 	glBindTexture(GL_TEXTURE_2D,texture);
-
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -227,8 +222,6 @@ GLuint make_tree_texture(){
 	glGenTextures(1,&texture);
 	glBindTexture(GL_TEXTURE_2D,texture);
 
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -242,6 +235,7 @@ GLuint make_tree_texture(){
 }
 
 GLfloat *range_fade(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high){
+// returns an alphamap where values below fadein_low and fadeout_high are 0, and values in between fade in to one.
 	GLfloat *fademap = new GLfloat[w*h];
 	for(int y = 0; y < h; y++){
 		for(int x = 0; x < w; x++){
@@ -263,6 +257,7 @@ GLfloat *range_fade(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloa
 }
 
 GLuint range_fade_texture(GLfloat *heightmap, int w, int h, GLfloat fadein_low, GLfloat fadein_high, GLfloat fadeout_low, GLfloat fadeout_high){
+// creates a texture out of the range fade
 	GLfloat *fademap = range_fade(heightmap, w, h, fadein_low, fadein_high, fadeout_low, fadeout_high);
 
 	GLuint texture;
@@ -270,8 +265,6 @@ GLuint range_fade_texture(GLfloat *heightmap, int w, int h, GLfloat fadein_low, 
 
 	glGenTextures(1,&texture);
 	glBindTexture(GL_TEXTURE_2D,texture);
-
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

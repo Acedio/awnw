@@ -18,6 +18,7 @@ using namespace std;
 const GLfloat PI = 3.14159;
 
 GLfloat *rotate_map(GLfloat *map, int w, int h, GLfloat angle){
+// not really used, actually. These rotated textures don't repeat and I can always fool with the texture matrix to get the right effect
 	GLfloat *rotated = new GLfloat[w*h];
 	for(int y = 0; y < h; y++){
 		GLfloat cy = sin(angle+PI/2)*(GLfloat)y;
@@ -38,6 +39,7 @@ GLfloat *rotate_map(GLfloat *map, int w, int h, GLfloat angle){
 }
 
 void to_file(GLfloat *heightmap, int w, int h, string file){
+// used for testing the texture functions. this one is for heightmaps
 	if(w > 0 && h > 0){
 		ofstream of(file.c_str());
 		of << "P2 " << w << " " << h << " 255\n";
@@ -55,6 +57,7 @@ void to_file(GLfloat *heightmap, int w, int h, string file){
 }
 
 void rgb_to_file(GLfloat *heightmap, int w, int h, string file){
+// used for testing the texture functions. this one is for colormaps
 	if(w > 0 && h > 0){
 		ofstream of(file.c_str());
 		of << "P3 " << w << " " << h << " 255\n";

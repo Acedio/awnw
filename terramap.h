@@ -23,7 +23,7 @@ void display_heightmap(GLfloat *heightmap, int w, int h);
 
 void draw_heightmap_vector(GLfloat *heightmap, int w, int h);
 void terrain_color(GLfloat **heightmap, int x, int y);
-void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint textures[TEXTURE_COUNT], int w, int h);
+void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint textures[TEXTURE_COUNT], int max_textures, int w, int h);
 
 void oceanify(GLfloat *heightmap, int w, int h, GLfloat min);
 void hillify(GLfloat *heightmap, int w, int h, GLfloat flatness);

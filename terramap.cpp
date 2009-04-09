@@ -16,23 +16,12 @@ using namespace std;
 #include "terramap.h"
 #include "textures.h"
 
-GLfloat *create_heightmap(int w, int h){
-	GLfloat *heightmap = new GLfloat[w*h];
-	int y;
-	for(y = 0; y < h; y++){
-		int x;
-		for(x = 0; x < w; x++){
-			heightmap[y*w+x] = 0;
-		}
-	}
-	return heightmap;
-}
-
 GLfloat rand_float(){
 	return 2*((GLfloat)rand()/(GLfloat)RAND_MAX) - 1;
 }
 
 void display_heightmap(GLfloat *heightmap, int w, int h){
+// used early on for testing
 	for(int y = 0; y < h; y++){
 		for(int x = 0; x < w; x++){
 			cout << heightmap[y*w+x] << "\t";
@@ -42,8 +31,9 @@ void display_heightmap(GLfloat *heightmap, int w, int h){
 }
 
 GLfloat *make_terramap(int power, GLfloat displace){
+// this is the old way of creating my heightmaps. faster than perlin, but really better for mountainous regions and wasn't what I was going for
 	int size = (int)pow((GLfloat)2,power);
-	GLfloat *heightmap = create_heightmap(size, size);
+	GLfloat *heightmap = new GLfloat[size*size];
 	int level;
 	for(level = 0; level < power; level++){
 		int inc = size/(int)pow((GLfloat)2,level);
@@ -74,6 +64,7 @@ GLfloat *make_terramap(int power, GLfloat displace){
 }
 
 void draw_heightmap_vector(GLfloat *heightmap, int w, int h){
+// awesome old-school-esque rendering of the heightmap
 	int x;
 	glColor3f(0,.1,0); // solid first
 	glDisable(GL_LIGHTING);
@@ -109,6 +100,7 @@ void draw_heightmap_vector(GLfloat *heightmap, int w, int h){
 }
 
 inline void terrain_color(GLfloat **heightmap, int x, int y){//CHANGE ME TO SINGLE DIM ARR
+// Not used anymore. I'd cut it but I don't feel like it ;D
 	return;
 	if(heightmap[y][x] < 1){
 		glColor3f(0,0,.3+sqrt(-1/(heightmap[y][x]-2))*.7);
@@ -124,6 +116,7 @@ inline void terrain_color(GLfloat **heightmap, int x, int y){//CHANGE ME TO SING
 }
 
 inline GLuint terrain_texture(GLfloat **heightmap, int x, int y, GLuint textures[TEXTURE_COUNT]){//CHANGE ME TO SINGLE DIM ARR
+// see above. not used
 	if(heightmap[y][x] < 1){
 		return textures[TEXTURE_SAND];
 	} else if(heightmap[y][x] < 3){
@@ -137,41 +130,42 @@ inline GLuint terrain_texture(GLfloat **heightmap, int x, int y, GLuint textures
 	}
 }
 
-void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint textures[TEXTURE_COUNT], int w, int h){
+void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint textures[TEXTURE_COUNT], int max_textures, int w, int h){
+// Here's our nifty optimized map display. Very tasty with a bit of multitexturing.
 	glColor3f(1,1,1);
 
 	glEnable(GL_LIGHTING);
 
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS_ALPHA]);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
 
 	glActiveTexture(GL_TEXTURE1);
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ROCK_ALPHA]);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS_ALPHA]);
 
 	glActiveTexture(GL_TEXTURE2);
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_SAND]);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE3);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE0);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_TEXTURE2);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE0);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE1);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA);
 
 	glActiveTexture(GL_TEXTURE3);
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_GRASS]);
+	glBindTexture(GL_TEXTURE_2D, textures[TEXTURE_ROCK_ALPHA]);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB, GL_INTERPOLATE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE0_RGB, GL_TEXTURE4);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
 	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE1_RGB, GL_PREVIOUS);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
-	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE1);
+	glTexEnvf(GL_TEXTURE_ENV, GL_SOURCE2_RGB, GL_TEXTURE3);
 	glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND2_RGB, GL_SRC_ALPHA);
 
 	glActiveTexture(GL_TEXTURE4);
@@ -191,43 +185,47 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 		for(int x = 0; x <= w; x++){
 			GLfloat fx = (GLfloat)(x)/32.0;
 
-			glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE0,fx,fy);
 			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
 			glMultiTexCoord2f(GL_TEXTURE2,fx,fy);
-			glMultiTexCoord2f(GL_TEXTURE3,fx,fy);
+			glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)x/(GLfloat)w,(GLfloat)y/(GLfloat)h);
 			glMultiTexCoord2f(GL_TEXTURE4,fx,fy);
 			glNormal3fv(normalmap[(y%h)*w+x%w]);
-			//glVertex3f((GLfloat)x,((heightmap[(y%h)*w+x%w]<1)?1:heightmap[(y%h)*w+x%w]),(GLfloat)y);
 			glVertex3f((GLfloat)x,heightmap[(y%h)*w+x%w],(GLfloat)y);
 
-			glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
+			glMultiTexCoord2f(GL_TEXTURE0,fx,fy1);
 			glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
 			glMultiTexCoord2f(GL_TEXTURE2,fx,fy1);
-			glMultiTexCoord2f(GL_TEXTURE3,fx,fy1);
+			glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)x/(GLfloat)w,(GLfloat)(y+1)/(GLfloat)h);
 			glMultiTexCoord2f(GL_TEXTURE4,fx,fy1);
 			glNormal3fv(normalmap[((y+1)%h)*w+x%w]);
-			//glVertex3f((GLfloat)x,((heightmap[((y+1)%h)*w+x%w]<1)?1:heightmap[((y+1)%h)*w+x%w]),(GLfloat)(y+1));
 			glVertex3f((GLfloat)x,heightmap[((y+1)%h)*w+x%w],(GLfloat)(y+1));
 		}
-		glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE0,(GLfloat)w/(GLfloat)32,fy1);
 		glMultiTexCoord2f(GL_TEXTURE1,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
 		glMultiTexCoord2f(GL_TEXTURE2,(GLfloat)w/(GLfloat)32,fy1);
-		glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)w/(GLfloat)32,fy1);
+		glMultiTexCoord2f(GL_TEXTURE3,(GLfloat)1,(GLfloat)(y+1)/(GLfloat)h);
 		glMultiTexCoord2f(GL_TEXTURE4,(GLfloat)w/(GLfloat)32,fy1);
 		glNormal3fv(normalmap[(y+1)%h+0]);
-		//glVertex3f((GLfloat)w,((heightmap[((y+1)%h)*w+0]<1)?1:heightmap[((y+1)%h)*w+0]),(GLfloat)(y+1));
 		glVertex3f((GLfloat)w,heightmap[((y+1)%h)*w+0],(GLfloat)(y+1));
 
-		glMultiTexCoord2f(GL_TEXTURE0,0,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE1,0,(GLfloat)(y+1)/(GLfloat)h);
-		glMultiTexCoord2f(GL_TEXTURE2,0,fy1);
-		glMultiTexCoord2f(GL_TEXTURE3,0,fy1);
+		glMultiTexCoord2f(GL_TEXTURE0,0,fy1);
+		glMultiTexCoord2f(GL_TEXTURE1,0,fy1);
+		glMultiTexCoord2f(GL_TEXTURE2,0,(GLfloat)(y+1)/(GLfloat)h);
+		glMultiTexCoord2f(GL_TEXTURE3,0,(GLfloat)(y+1)/(GLfloat)h);
 		glMultiTexCoord2f(GL_TEXTURE4,0,fy1);
 		glNormal3fv(normalmap[((y+1)%h)*w+0]);
-		//glVertex3f((GLfloat)0,((heightmap[((y+1)%h)*w+0]<1)?1:heightmap[((y+1)%h)*w+0]),(GLfloat)(y+1));
 		glVertex3f((GLfloat)0,heightmap[((y+1)%h)*w+0],(GLfloat)(y+1));
 	}
 	glEnd();
+
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, NULL);
+	glDisable(GL_TEXTURE_2D);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, NULL);
+	glDisable(GL_TEXTURE_2D);
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, NULL);
@@ -245,6 +243,7 @@ void draw_heightmap_texture(GLfloat *heightmap, GLfloat **normalmap, GLuint text
 }
 
 GLfloat **make_normalmap(GLfloat *heightmap, int w, int h){
+// really cheesy method of generating normal maps, it's using surface normals currently. Should use the average of the 6 surface normals instead.
 	GLfloat **normalmap = new GLfloat*[w*h];
 	int y;
 	for(y = 0; y < h; y++){
@@ -265,6 +264,7 @@ GLfloat **make_normalmap(GLfloat *heightmap, int w, int h){
 }
 
 void oceanify(GLfloat *heightmap, int w, int h, GLfloat min){
+// clamps the lower end of height values to [min]
 	int x;
 	bool doShift = false;
 	for(x = 0; x < w; x++){
@@ -287,6 +287,7 @@ void oceanify(GLfloat *heightmap, int w, int h, GLfloat min){
 }
 
 void hillify(GLfloat *heightmap, int w, int h, GLfloat flatness){
+// makes heightmap taller or shorter, yet retains slope extremes more or less
 	oceanify(heightmap, w, h, 0.1); // no negatives, yo!
 	int x;
 	for(x = 0; x < w; x++){
@@ -298,6 +299,7 @@ void hillify(GLfloat *heightmap, int w, int h, GLfloat flatness){
 }
 
 void smoothify(GLfloat *heightmap, int w, int h, GLfloat inertia){
+// fun smoothing (really blurring, actually) function. fun to watch.
 	if(inertia > 1) inertia = 1;
 	if(inertia < 0) inertia = 0;
 	int x;
@@ -310,6 +312,7 @@ void smoothify(GLfloat *heightmap, int w, int h, GLfloat inertia){
 }
 
 GLfloat *normalize(GLfloat *heightmap, int w, int h, GLfloat depth){
+// scales a heightmap to fit between [0,1]
 	GLfloat min, max;
 	min = max = heightmap[0];
 	for(int y = 0; y < h; y++){
@@ -321,7 +324,7 @@ GLfloat *normalize(GLfloat *heightmap, int w, int h, GLfloat depth){
 			}
 		}
 	}
-	GLfloat *normalized = create_heightmap(w,h);
+	GLfloat *normalized = new GLfloat[w*h];
 	for(int y = 0; y < h; y++){
 		for(int x = 0; x < w; x++){
 			normalized[y*w+x] = depth * (heightmap[y*w+x] - min) / (max - min);
@@ -331,6 +334,7 @@ GLfloat *normalize(GLfloat *heightmap, int w, int h, GLfloat depth){
 }
 
 void out_to_file(GLfloat *heightmap, int w, int h, string file){
+// actually, this is basically the same as map.cpp's to_file function. ppms and pgms are awesome for this.
 	if(w > 0 && h > 0){
 		ofstream of(file.c_str());
 		of << "P2 " << w << " " << h << " 255\n";
