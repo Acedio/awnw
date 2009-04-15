@@ -525,6 +525,7 @@ void keyboard(Uint8 *keys){
 		v_angle += 4*speed;
 	}
 	if(keys[SDLK_z]){
+		max_terrain_height = (GLfloat)size/max_height_div;
 		current_heightmap = perlin_noise(power,power,.5,0,power-1);
 		current_heightmap = normalize(current_heightmap, size, size, max_terrain_height);
 		current_normalmap = make_normalmap(current_heightmap,size,size);
